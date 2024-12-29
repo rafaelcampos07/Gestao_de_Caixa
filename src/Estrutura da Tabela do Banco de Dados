@@ -5,20 +5,8 @@
         "table_name": "caixas_fechados",
         "columns": [
           {
-            "column_name": "desconto",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "total",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "data",
-            "data_type": "timestamp without time zone",
+            "column_name": "id",
+            "data_type": "uuid",
             "is_nullable": "YES",
             "column_default": null
           },
@@ -29,14 +17,8 @@
             "column_default": null
           },
           {
-            "column_name": "id",
-            "data_type": "uuid",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "payment_type",
-            "data_type": "character varying",
+            "column_name": "data",
+            "data_type": "timestamp without time zone",
             "is_nullable": "YES",
             "column_default": null
           },
@@ -47,25 +29,19 @@
             "column_default": null
           },
           {
-            "column_name": "installments",
-            "data_type": "integer",
-            "is_nullable": "YES",
-            "column_default": "1"
-          },
-          {
-            "column_name": "interest_rate",
+            "column_name": "total",
             "data_type": "numeric",
             "is_nullable": "YES",
             "column_default": null
           },
           {
-            "column_name": "produto_id",
-            "data_type": "uuid",
+            "column_name": "desconto",
+            "data_type": "numeric",
             "is_nullable": "YES",
             "column_default": null
           },
           {
-            "column_name": "items",
+            "column_name": "produtos",
             "data_type": "jsonb",
             "is_nullable": "YES",
             "column_default": null
@@ -77,8 +53,32 @@
             "column_default": null
           },
           {
-            "column_name": "produtos",
+            "column_name": "items",
             "data_type": "jsonb",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "produto_id",
+            "data_type": "uuid",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "installments",
+            "data_type": "integer",
+            "is_nullable": "YES",
+            "column_default": "1"
+          },
+          {
+            "column_name": "payment_type",
+            "data_type": "character varying",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "interest_rate",
+            "data_type": "numeric",
             "is_nullable": "YES",
             "column_default": null
           }
@@ -88,21 +88,33 @@
         "table_name": "produtos",
         "columns": [
           {
-            "column_name": "user_id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": "auth.uid()"
-          },
-          {
             "column_name": "id",
             "data_type": "uuid",
             "is_nullable": "NO",
             "column_default": "gen_random_uuid()"
           },
           {
+            "column_name": "nome",
+            "data_type": "text",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
             "column_name": "preco",
             "data_type": "numeric",
             "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "column_name": "descricao",
+            "data_type": "text",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "codigo",
+            "data_type": "text",
+            "is_nullable": "YES",
             "column_default": null
           },
           {
@@ -118,22 +130,10 @@
             "column_default": "now()"
           },
           {
-            "column_name": "codigo",
-            "data_type": "text",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "descricao",
-            "data_type": "text",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "nome",
-            "data_type": "text",
+            "column_name": "user_id",
+            "data_type": "uuid",
             "is_nullable": "NO",
-            "column_default": null
+            "column_default": "auth.uid()"
           }
         ]
       },
@@ -141,7 +141,43 @@
         "table_name": "vendas",
         "columns": [
           {
-            "column_name": "items",
+            "column_name": "id",
+            "data_type": "uuid",
+            "is_nullable": "NO",
+            "column_default": "uuid_generate_v4()"
+          },
+          {
+            "column_name": "user_id",
+            "data_type": "uuid",
+            "is_nullable": "NO",
+            "column_default": null
+          },
+          {
+            "column_name": "data",
+            "data_type": "timestamp with time zone",
+            "is_nullable": "NO",
+            "column_default": "now()"
+          },
+          {
+            "column_name": "forma_pagamento",
+            "data_type": "character varying",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "total",
+            "data_type": "numeric",
+            "is_nullable": "YES",
+            "column_default": null
+          },
+          {
+            "column_name": "desconto",
+            "data_type": "numeric",
+            "is_nullable": "YES",
+            "column_default": "0"
+          },
+          {
+            "column_name": "produtos",
             "data_type": "jsonb",
             "is_nullable": "YES",
             "column_default": null
@@ -153,32 +189,14 @@
             "column_default": "false"
           },
           {
-            "column_name": "produtos",
+            "column_name": "items",
             "data_type": "jsonb",
             "is_nullable": "YES",
             "column_default": null
           },
           {
-            "column_name": "desconto",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": "0"
-          },
-          {
-            "column_name": "total",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "id",
+            "column_name": "produto_id",
             "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": "uuid_generate_v4()"
-          },
-          {
-            "column_name": "forma_pagamento",
-            "data_type": "character varying",
             "is_nullable": "YES",
             "column_default": null
           },
@@ -189,34 +207,16 @@
             "column_default": null
           },
           {
-            "column_name": "data",
-            "data_type": "timestamp without time zone",
-            "is_nullable": "NO",
-            "column_default": "now()"
-          },
-          {
-            "column_name": "user_id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": null
-          },
-          {
-            "column_name": "interest_rate",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": "0"
-          },
-          {
             "column_name": "installments",
             "data_type": "integer",
             "is_nullable": "YES",
             "column_default": "1"
           },
           {
-            "column_name": "produto_id",
-            "data_type": "uuid",
+            "column_name": "interest_rate",
+            "data_type": "numeric",
             "is_nullable": "YES",
-            "column_default": null
+            "column_default": "0"
           }
         ]
       }
