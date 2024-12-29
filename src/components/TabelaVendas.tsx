@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
+
 export function TabelaVendas({ vendas, excluirVenda }) {
   if (!vendas || vendas.length === 0) {
     return <div className="text-gray-500 text-center">Nenhuma venda encontrada.</div>;
@@ -75,7 +78,7 @@ export function TabelaVendas({ vendas, excluirVenda }) {
                   onClick={() => excluirVenda(venda.id)}
                   className="text-red-500 hover:text-red-700"
                 >
-                  🗑
+                  <FontAwesomeIcon icon={faTrash} />
                 </button>
               </td>
             </tr>
