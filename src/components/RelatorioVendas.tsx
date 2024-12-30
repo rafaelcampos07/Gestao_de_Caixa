@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { TabelaVendas } from './TabelaVendas';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import type { Venda } from '../types';
 
 export function RelatorioVendas() {
@@ -20,12 +22,14 @@ export function RelatorioVendas() {
     total: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   useEffect(() => {
     carregarVendas();
   }, []);
 
-  const carregarVendas = async () => {
+  const carregarVendas = async (start?: Date, end?: Date) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -33,22 +37,22 @@ export function RelatorioVendas() {
         return;
       }
 
-      // Carregar vendas ativas
-      const { data: ativas, error: errorAtivas } = await supabase
-        .from('vendas')
-        .select('*')
-        .eq('user_id', user.id);
+      let queryAtivas = supabase.from('vendas').select('*').eq('user_id', user.id);
+      let queryFechadas = supabase.from('caixas_fechados').select('*').eq('user_id', user.id);
 
+      if (start && end) {
+        queryAtivas = queryAtivas.gte('data', start.toISOString()).lte('data', end.toISOString());
+        queryFechadas = queryFechadas.gte('data', start.toISOString()).lte('data', end.toISOString());
+      }
+
+      // Carregar vendas ativas
+      const { data: ativas, error: errorAtivas } = await queryAtivas;
       if (errorAtivas) throw errorAtivas;
       setVendasAtivas(ativas || []);
       calcularTotais(ativas || [], setTotaisAtivos);
 
       // Carregar vendas fechadas
-      const { data: fechadas, error: errorFechadas } = await supabase
-        .from('caixas_fechados')
-        .select('*')
-        .eq('user_id', user.id);
-
+      const { data: fechadas, error: errorFechadas } = await queryFechadas;
       if (errorFechadas) throw errorFechadas;
       setVendasFechadas(fechadas || []);
       calcularTotais(fechadas || [], setTotaisFechados);
@@ -101,9 +105,7 @@ export function RelatorioVendas() {
 
     try {
       // Mover vendas ativas para caixas_fechados
-      const { error: insertError } = await supabase
-        .from('caixas_fechados')
-        .insert(vendasAtivas);
+      const { error: insertError } = await supabase.from('caixas_fechados').insert(vendasAtivas);
 
       if (insertError) throw insertError;
 
@@ -125,6 +127,16 @@ export function RelatorioVendas() {
     }
   };
 
+  const handleFilter = () => {
+    carregarVendas(startDate, endDate);
+  };
+
+  const clearFilter = () => {
+    setStartDate(null);
+    setEndDate(null);
+    carregarVendas();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -141,31 +153,51 @@ export function RelatorioVendas() {
         </button>
       </div>
 
+      <div className="flex gap-4 mb-6">
+        <DatePicker
+          selected={startDate}
+          onChange={(date) => setStartDate(date)}
+          selectsStart
+          startDate={startDate}
+          endDate={endDate}
+          placeholderText="Data Inicial"
+          className="border p-2 rounded"
+        />
+        <DatePicker
+          selected={endDate}
+          onChange={(date) => setEndDate(date)}
+          selectsEnd
+          startDate={startDate}
+          endDate={endDate}
+          minDate={startDate}
+          placeholderText="Data Final"
+          className="border p-2 rounded"
+        />
+        <button onClick={handleFilter} className="btn-primary">
+          Filtrar
+        </button>
+        <button onClick={clearFilter} className="btn-secondary">
+          Limpar Filtro
+        </button>
+      </div>
+
       {/* Resumo Vendas Ativas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisAtivos.dinheiro.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
         </div>
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">PIX</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisAtivos.pix.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
         </div>
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">Cartão</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisAtivos.cartao.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.cartao.toFixed(2)}</div>
         </div>
         <div className="card p-4 bg-indigo-600">
           <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-          <div className="text-2xl font-semibold text-white">
-            R$ {totaisAtivos.total.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
         </div>
       </div>
 
@@ -178,36 +210,25 @@ export function RelatorioVendas() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisFechados.dinheiro.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
         </div>
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">PIX</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisFechados.pix.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
         </div>
         <div className="card p-4">
           <div className="text-sm font-medium text-gray-600">Cartão</div>
-          <div className="text-2xl font-semibold text-gray-900">
-            R$ {totaisFechados.cartao.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.cartao.toFixed(2)}</div>
         </div>
         <div className="card p-4 bg-indigo-600">
           <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-          <div className="text-2xl font-semibold text-white">
-            R$ {totaisFechados.total.toFixed(2)}
-          </div>
+          <div className="text-2xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
         </div>
       </div>
 
       <div>
         <h2 className="text-xl font-bold mb-4">Vendas Fechadas</h2>
-        <TabelaVendas
-          vendas={vendasFechadas}
-          excluirVenda={(id) => excluirVenda(id, 'caixas_fechados')}
-        />
+        <TabelaVendas vendas={vendasFechadas} excluirVenda={(id) => excluirVenda(id, 'caixas_fechados')} />
       </div>
     </div>
   );
