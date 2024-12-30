@@ -1,24 +1,30 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/supabase';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Criação do cliente Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-// Função para excluir uma venda
-export async function excluirVenda(vendaId: number): Promise<boolean> {
-  try {
-    const { error } = await supabase.from('vendas').delete().eq('id', vendaId);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+});
 
-    if (error) {
-      console.error('Erro ao excluir venda:', error);
-      return false;
+export async function handleSupabaseError(error: unknown) {
+  if (error instanceof Error) {
+    console.error('Supabase error:', error);
+    
+    // Check for specific error types
+    if (error.message.includes('Failed to fetch')) {
+      return 'Erro de conexão com o servidor. Por favor, verifique sua conexão com a internet.';
     }
-
-    return true;
-  } catch (err) {
-    console.error('Erro inesperado ao excluir venda:', err);
-    return false;
+    
+    return error.message;
   }
+  return 'Ocorreu um erro inesperado';
 }
