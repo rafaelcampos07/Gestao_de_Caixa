@@ -1,225 +1,336 @@
 [
   {
-    "json_agg": [
-      {
-        "table_name": "caixas_fechados",
-        "columns": [
-          {
-            "column_name": "id",
-            "data_type": "uuid",
-            "is_nullable": "YES",
-            "column_default": null
+    "row_to_json": {
+      "id": "027be04d-64e2-4739-bab6-8b4248281d71",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T11:44:33.548+00:00",
+      "forma_pagamento": "dinheiro",
+      "total": 4,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735559046628",
+            "nome": "Zíper 30cm",
+            "preco": 4,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "user_id",
-            "data_type": "uuid",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 4,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "6d6f96aa-49c3-4229-b5c1-16b5f246a6fe",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T11:55:57.04+00:00",
+      "forma_pagamento": "debito",
+      "total": 55,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735559750756",
+            "nome": "Camiseta Sulf",
+            "preco": 55,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "data",
-            "data_type": "timestamp without time zone",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 55,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "8be4df16-f775-485a-8ebc-853826047422",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T12:13:15.614+00:00",
+      "forma_pagamento": "dinheiro",
+      "total": 85,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735560776569",
+            "nome": "Saia Longa Linho",
+            "preco": 85,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "forma_pagamento",
-            "data_type": "character varying",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 85,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "60fb6d65-af7b-4e49-96b5-17f448499809",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T12:17:01.699+00:00",
+      "forma_pagamento": "pix",
+      "total": 100,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735560989108",
+            "nome": "Short Linho Bege G",
+            "preco": 61.9,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "total",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 61.9,
+          "quantidade": 1
+        },
+        {
+          "produto": {
+            "id": "temp-1735561015774",
+            "nome": "Regata Canelada Branca",
+            "preco": 38.1,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "desconto",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 38.1,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "b37cfb59-4c4b-4830-a6ca-dff8a76052ab",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T12:21:14.995+00:00",
+      "forma_pagamento": "pix",
+      "total": 150,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735561205022",
+            "nome": "Calça Jeans Tradicional",
+            "preco": 72,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "produtos",
-            "data_type": "jsonb",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 72,
+          "quantidade": 1
+        },
+        {
+          "produto": {
+            "id": "temp-1735561248668",
+            "nome": "Camiseta Cyclone",
+            "preco": 78,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "finalizada",
-            "data_type": "boolean",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 78,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "13133bb4-cad0-4424-a140-933848591463",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T12:22:29.84+00:00",
+      "forma_pagamento": "pix",
+      "total": 125,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735561342278",
+            "nome": "Calça Balão",
+            "preco": 125,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "items",
-            "data_type": "jsonb",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 125,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "b84eb3fe-1189-4cdb-bf98-2ab808210454",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T12:23:01.103+00:00",
+      "forma_pagamento": "debito",
+      "total": 75,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735561370198",
+            "nome": "Saia Midi",
+            "preco": 75,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "produto_id",
-            "data_type": "uuid",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 75,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "5e8366fc-5f0c-44d1-9ff8-f128c08622bc",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T13:54:23.879+00:00",
+      "forma_pagamento": "dinheiro",
+      "total": 100,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735566858256",
+            "nome": "Vestido Longo Bege",
+            "preco": 100,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "installments",
-            "data_type": "integer",
-            "is_nullable": "YES",
-            "column_default": "1"
+          "subtotal": 100,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "faf4e30d-1530-4d23-ae0b-a740967aac54",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T13:54:50.915+00:00",
+      "forma_pagamento": "dinheiro",
+      "total": 4,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735566885695",
+            "nome": "Ziper 15cm",
+            "preco": 4,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "payment_type",
-            "data_type": "character varying",
-            "is_nullable": "YES",
-            "column_default": null
+          "subtotal": 4,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
+  },
+  {
+    "row_to_json": {
+      "id": "e3dd54a3-4d34-4280-9c10-60114f04d58b",
+      "user_id": "e785311e-c5e3-4d9d-914b-934061397684",
+      "data": "2024-12-30T13:55:32.493+00:00",
+      "forma_pagamento": "pix",
+      "total": 19,
+      "desconto": 0,
+      "produtos": null,
+      "finalizada": true,
+      "items": [
+        {
+          "produto": {
+            "id": "temp-1735566917257",
+            "nome": "Estras",
+            "preco": 19,
+            "codigo": "",
+            "estoque": 0,
+            "descricao": ""
           },
-          {
-            "column_name": "interest_rate",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
-          }
-        ]
-      },
-      {
-        "table_name": "produtos",
-        "columns": [
-          {
-            "column_name": "id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": "gen_random_uuid()"
-          },
-          {
-            "column_name": "nome",
-            "data_type": "text",
-            "is_nullable": "NO",
-            "column_default": null
-          },
-          {
-            "column_name": "preco",
-            "data_type": "numeric",
-            "is_nullable": "NO",
-            "column_default": null
-          },
-          {
-            "column_name": "descricao",
-            "data_type": "text",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "codigo",
-            "data_type": "text",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "estoque",
-            "data_type": "integer",
-            "is_nullable": "YES",
-            "column_default": "0"
-          },
-          {
-            "column_name": "created_at",
-            "data_type": "timestamp with time zone",
-            "is_nullable": "YES",
-            "column_default": "now()"
-          },
-          {
-            "column_name": "user_id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": "auth.uid()"
-          }
-        ]
-      },
-      {
-        "table_name": "vendas",
-        "columns": [
-          {
-            "column_name": "id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": "uuid_generate_v4()"
-          },
-          {
-            "column_name": "user_id",
-            "data_type": "uuid",
-            "is_nullable": "NO",
-            "column_default": null
-          },
-          {
-            "column_name": "data",
-            "data_type": "timestamp with time zone",
-            "is_nullable": "NO",
-            "column_default": "now()"
-          },
-          {
-            "column_name": "forma_pagamento",
-            "data_type": "character varying",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "total",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "desconto",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": "0"
-          },
-          {
-            "column_name": "produtos",
-            "data_type": "jsonb",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "finalizada",
-            "data_type": "boolean",
-            "is_nullable": "YES",
-            "column_default": "false"
-          },
-          {
-            "column_name": "items",
-            "data_type": "jsonb",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "produto_id",
-            "data_type": "uuid",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "payment_type",
-            "data_type": "text",
-            "is_nullable": "YES",
-            "column_default": null
-          },
-          {
-            "column_name": "installments",
-            "data_type": "integer",
-            "is_nullable": "YES",
-            "column_default": "1"
-          },
-          {
-            "column_name": "interest_rate",
-            "data_type": "numeric",
-            "is_nullable": "YES",
-            "column_default": "0"
-          }
-        ]
-      }
-    ]
+          "subtotal": 19,
+          "quantidade": 1
+        }
+      ],
+      "produto_id": null,
+      "payment_type": null,
+      "installments": 1,
+      "interest_rate": 0,
+      "funcionario_id": null
+    }
   }
 ]
