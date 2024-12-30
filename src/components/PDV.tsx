@@ -10,7 +10,7 @@ export function PDV() {
   const [carrinho, setCarrinho] = useState<ItemVenda[]>([]);
   const [busca, setBusca] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Venda['forma_pagamento']>('dinheiro');
-  const [desconto, setDesconto] = useState<number | null>(null); // Altere para permitir null
+  const [desconto, setDesconto] = useState<number | null>(null);
 
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
@@ -65,10 +65,7 @@ export function PDV() {
 
   const total = carrinho.reduce((acc, item) => acc + item.subtotal, 0);
 
-  const totalComDesconto =
-  formaPagamento === 'dinheiro'
-    ? total - (desconto ? (total * desconto) / 100 : 0)
-    : total;
+  const totalComDesconto = desconto ? total - (total * desconto) / 100 : total;
 
   const finalizarVenda = async () => {
     try {
@@ -85,22 +82,21 @@ export function PDV() {
       }
 
       const venda = {
-  items: carrinho,
-  total: totalComDesconto,
-  forma_pagamento: formaPagamento,
-  desconto: formaPagamento === 'dinheiro' && desconto ? desconto : 0, // Usa 0 se desconto for null
-  data: new Date(),
-  finalizada: true,
-  user_id: user.id,
-};
-
+        items: carrinho,
+        total: totalComDesconto,
+        forma_pagamento: formaPagamento,
+        desconto: desconto || 0, // Usa 0 se desconto for null
+        data: new Date(),
+        finalizada: true,
+        user_id: user.id,
+      };
 
       const { error } = await supabase.from('vendas').insert([venda]);
       if (error) throw error;
 
       toast.success('Venda finalizada com sucesso!');
       setCarrinho([]);
-      setDesconto(0);
+      setDesconto(null);
       setFormaPagamento('dinheiro');
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
@@ -145,17 +141,17 @@ export function PDV() {
               />
               <div className="flex gap-2">
                 <input
-                   type="number"
-  step="0.01"
-  value={novoProduto.preco ?? ''} // Exibe o placeholder se for null ou undefined
-  onChange={(e) =>
-    setNovoProduto((prev) => ({
-      ...prev,
-      preco: e.target.value ? parseFloat(e.target.value) : null, // Define null se vazio
-    }))
-  }
-  placeholder="Preço"
-  className="input-field"
+                  type="number"
+                  step="0.01"
+                  value={novoProduto.preco ?? ''}
+                  onChange={(e) =>
+                    setNovoProduto((prev) => ({
+                      ...prev,
+                      preco: e.target.value ? parseFloat(e.target.value) : null,
+                    }))
+                  }
+                  placeholder="Preço"
+                  className="input-field"
                 />
                 <input
                   type="number"
@@ -252,16 +248,14 @@ export function PDV() {
             <option value="credito">Cartão de Crédito</option>
           </select>
 
-         {formaPagamento === 'dinheiro' && (
-  <input
-    type="number"
-    step="0.01"
-    value={desconto ?? ''} // Exibe o placeholder se for null ou undefined
-    onChange={(e) => setDesconto(e.target.value ? parseFloat(e.target.value) : null)} // Define null se vazio
-    placeholder="Desconto (%)"
-    className="input-field"
-            />
-          )}
+          <input
+            type="number"
+            step="0.01"
+            value={desconto ?? ''}
+            onChange={(e) => setDesconto(e.target.value ? parseFloat(e.target.value) : null)}
+            placeholder="Desconto (%)"
+            className="input-field"
+          />
         </div>
 
         <div className="text-2xl font-semibold text-gray-900 mb-4 flex items-center justify-between">

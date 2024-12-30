@@ -1,96 +1,60 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import React from 'react';
+import { Trash2 } from 'lucide-react';
+import type { Venda } from '../types';
 
-export function TabelaVendas({ vendas, excluirVenda }) {
-  if (!vendas || vendas.length === 0) {
-    return <div className="text-gray-500 text-center">Nenhuma venda encontrada.</div>;
-  }
+interface TabelaVendasProps {
+  vendas: Venda[];
+  excluirVenda?: (id: number) => void;
+}
+
+export const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda }) => {
+  const renderItensVenda = (itens) => {
+    return itens.map((item, index) => (
+      <div key={index} className="flex justify-between items-center p-2">
+        <span>{item.produto.nome} {item.quantidade}x</span>
+        <span>R$ {(item.produto.preco * item.quantidade).toFixed(2)}</span>
+      </div>
+    ));
+  };
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full leading-normal shadow rounded-lg">
-        <thead>
+      <table className="min-w-full bg-white border border-gray-300">
+        <thead className="bg-gray-100">
           <tr>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Data e Hora
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Produto
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Quantidade
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Subtotal
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Desconto
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Forma de Pagamento
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Total
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Ações
-            </th>
+            <th className="px-4 py-2 text-center border-b">Data e Hora</th>
+            <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
+            <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
+            <th className="px-4 py-2 text-center border-b">Total da Venda</th>
+            <th className="px-4 py-2 text-center border-b">Forma de Pagamento</th>
+            {excluirVenda && <th className="px-4 py-2 text-center border-b">Ações</th>}
           </tr>
         </thead>
         <tbody>
-          {vendas.map((venda) => {
-            const formattedDate = format(new Date(venda.data), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
-
-            return (
-              <tr key={venda.id} className="bg-white hover:bg-gray-100">
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  {formattedDate} {/* Exibe data e hora no horário de Brasília */}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  {venda.items && venda.items.length > 0 ? (
-                    venda.items.map((item, index) => (
-                      <div key={index}>{item.produto?.nome || 'Sem nome'}</div>
-                    ))
-                  ) : (
-                    <span className="text-gray-400">Sem produtos</span>
-                  )}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  {venda.items
-                    ? venda.items.reduce((sum, item) => sum + (item.quantidade || 0), 0)
-                    : 0}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  R$ {venda.items
-                    ? venda.items
-                        .reduce((sum, item) => sum + (item.subtotal || 0), 0)
-                        .toFixed(2)
-                    : '0.00'}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  {venda.desconto ? venda.desconto + '%' : '0.00%'}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  {venda.forma_pagamento}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  R$ {parseFloat(venda.total || 0).toFixed(2)}
-                </td>
-                <td className="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                  <button
-                    onClick={() => excluirVenda(venda.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </td>
+          {vendas.length === 0 ? (
+            <tr>
+              <td className="border px-4 py-2 text-center" colSpan={excluirVenda ? 6 : 5}>Nenhuma venda encontrada</td>
+            </tr>
+          ) : (
+            vendas.map((venda) => (
+              <tr key={venda.id} className="hover:bg-gray-50">
+                <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
+                <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
+                <td className="border px-4 py-2 text-center">{venda.desconto}%</td>
+                <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>
+                <td className="border px-4 py-2 text-center">{venda.forma_pagamento}</td>
+                {excluirVenda && (
+                  <td className="border px-4 py-2 text-center">
+                    <button onClick={() => excluirVenda(venda.id)} className="text-red-600 hover:text-red-800">
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                )}
               </tr>
-            );
-          })}
+            ))
+          )}
         </tbody>
       </table>
     </div>
   );
-}
+};

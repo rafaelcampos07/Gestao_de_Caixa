@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import { TabelaVendas } from './TabelaVendas';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { AiOutlineSearch, AiOutlineDollarCircle } from 'react-icons/ai';
+import { FaMoneyBillWave, FaCreditCard, FaMoneyCheckAlt } from 'react-icons/fa';
 import type { Venda } from '../types';
 
 export function RelatorioVendas() {
@@ -81,6 +83,8 @@ export function RelatorioVendas() {
   };
 
   const excluirVenda = async (id: number, tabela: 'vendas' | 'caixas_fechados') => {
+    if (!confirm('Deseja realmente excluir esta venda?')) return;
+
     try {
       const { error } = await supabase.from(tabela).delete().eq('id', id);
       if (error) throw error;
@@ -173,7 +177,8 @@ export function RelatorioVendas() {
           placeholderText="Data Final"
           className="border p-2 rounded"
         />
-        <button onClick={handleFilter} className="btn-primary">
+        <button onClick={handleFilter} className="btn-primary flex items-center gap-2">
+          <AiOutlineSearch size={20} />
           Filtrar
         </button>
         <button onClick={clearFilter} className="btn-secondary">
@@ -183,21 +188,33 @@ export function RelatorioVendas() {
 
       {/* Resumo Vendas Ativas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaMoneyBillWave size={24} className="text-green-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Dinheiro</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">PIX</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaMoneyCheckAlt size={24} className="text-blue-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">PIX</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">Cartão</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.cartao.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaCreditCard size={24} className="text-purple-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Cartão</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.cartao.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4 bg-indigo-600">
-          <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-          <div className="text-2xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
+        <div className="card p-4 bg-indigo-600 flex items-center gap-2">
+          <AiOutlineDollarCircle size={24} className="text-white" />
+          <div>
+            <div className="text-sm font-medium text-indigo-100">Total Geral</div>
+            <div className="text-2xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 
@@ -208,21 +225,33 @@ export function RelatorioVendas() {
 
       {/* Resumo Vendas Fechadas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaMoneyBillWave size={24} className="text-green-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Dinheiro</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">PIX</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaMoneyCheckAlt size={24} className="text-blue-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">PIX</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4">
-          <div className="text-sm font-medium text-gray-600">Cartão</div>
-          <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.cartao.toFixed(2)}</div>
+        <div className="card p-4 flex items-center gap-2">
+          <FaCreditCard size={24} className="text-purple-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Cartão</div>
+            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.cartao.toFixed(2)}</div>
+          </div>
         </div>
-        <div className="card p-4 bg-indigo-600">
-          <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-          <div className="text-2xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
+        <div className="card p-4 bg-indigo-600 flex items-center gap-2">
+          <AiOutlineDollarCircle size={24} className="text-white" />
+          <div>
+            <div className="text-sm font-medium text-indigo-100">Total Geral</div>
+            <div className="text-2xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 
