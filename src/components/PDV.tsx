@@ -46,16 +46,16 @@ export function PDV() {
     }
   };
 
-  const adicionarAoCarrinho = (produto: Produto) => {
+  const adicionarAoCarrinho = (produto: Produto, quantidade: number = 1) => {
     const item = carrinho.find(i => i.produto.id === produto.id);
     if (item) {
       setCarrinho(carrinho.map(i => 
         i.produto.id === produto.id
-          ? { ...i, quantidade: i.quantidade + 1, subtotal: (i.quantidade + 1) * i.produto.preco }
+          ? { ...i, quantidade: i.quantidade + quantidade, subtotal: (i.quantidade + quantidade) * i.produto.preco }
           : i
       ));
     } else {
-      setCarrinho([...carrinho, { produto, quantidade: 1, subtotal: produto.preco }]);
+      setCarrinho([...carrinho, { produto, quantidade, subtotal: quantidade * produto.preco }]);
     }
   };
 
@@ -176,7 +176,7 @@ export function PDV() {
                     codigo: '',
                     estoque: 0
                   };
-                  adicionarAoCarrinho(produtoAvulso);
+                  adicionarAoCarrinho(produtoAvulso, novoProduto.quantidade);
                   setNovoProduto({ nome: '', preco: 0, quantidade: 1 });
                 }} 
                 className="btn-primary w-full"
