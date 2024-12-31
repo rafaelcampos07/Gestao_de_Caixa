@@ -3,16 +3,17 @@ import { Trash2, Edit3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import EditarVendaModal from './EditarVendaModal';
-import type { Venda } from '../types';
+import type { Venda, Funcionario } from '../types';
 
 interface TabelaVendasProps {
   vendas: Venda[];
   excluirVenda: (id: number, tabela: 'vendas' | 'caixas_fechados') => void;
   editarVenda: (id: number) => void;
   tipoTabela: 'ativas' | 'fechadas';
+  funcionarios: Funcionario[];
 }
 
-const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, editarVenda, tipoTabela }) => {
+const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, editarVenda, tipoTabela, funcionarios }) => {
   const [vendaSelecionada, setVendaSelecionada] = useState<Venda | null>(null);
   const [showEditarModal, setShowEditarModal] = useState(false);
 
@@ -38,12 +39,18 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
     setShowEditarModal(true);
   };
 
+  const getFuncionarioNome = (funcionarioId: number) => {
+    const funcionario = funcionarios.find((f) => f.id === funcionarioId);
+    return funcionario ? funcionario.nome : 'Desconhecido';
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white border border-gray-300">
         <thead className="bg-gray-100">
           <tr>
             <th className="px-4 py-2 text-center border-b">Data e Hora</th>
+            <th className="px-4 py-2 text-center border-b">Funcionário</th>
             <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
             <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
             <th className="px-4 py-2 text-center border-b">Total da Venda</th>
@@ -54,12 +61,13 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
         <tbody>
           {vendas.length === 0 ? (
             <tr>
-              <td className="border px-4 py-2 text-center" colSpan={6}>Nenhuma venda encontrada</td>
+              <td className="border px-4 py-2 text-center" colSpan={7}>Nenhuma venda encontrada</td>
             </tr>
           ) : (
             vendas.map((venda) => (
               <tr key={venda.id} className="hover:bg-gray-50">
                 <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
+                <td className="border px-4 py-2 text-center">{getFuncionarioNome(venda.funcionario_id)}</td>
                 <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
                 <td className="border px-4 py-2 text-center">{venda.desconto}%</td>
                 <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>

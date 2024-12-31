@@ -7,7 +7,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { AiOutlineSearch, AiOutlineDollarCircle } from 'react-icons/ai';
 import { FaMoneyBillWave, FaCreditCard, FaMoneyCheckAlt } from 'react-icons/fa';
-import type { Venda } from '../types';
+import type { Venda, Funcionario } from '../types';
 
 export function RelatorioVendas() {
   const [vendasAtivas, setVendasAtivas] = useState<Venda[]>([]);
@@ -26,30 +26,41 @@ export function RelatorioVendas() {
     debito: 0,
     total: 0,
   });
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [vendaAtual, setVendaAtual] = useState<Venda | null>(null);
-  const [isFilterActive, setIsFilterActive] = useState(false); // Novo estado para controlar o filtro de data
+  const [isFilterActive, setIsFilterActive] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     carregarVendas();
+    carregarFuncionarios();
 
-    // Configurar o intervalo para atualizar os dados a cada 1 segundo
     intervalRef.current = setInterval(() => {
       if (!isFilterActive) {
         console.log('Atualizando vendas...');
         carregarVendas();
       }
-    }, 1000); // 1 segundo
+    }, 1000);
 
-    // Limpar o intervalo ao desmontar o componente
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isFilterActive]);
+
+  const carregarFuncionarios = async () => {
+    try {
+      const { data, error } = await supabase.from('funcionarios').select('*');
+      if (error) throw error;
+      setFuncionarios(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
+      toast.error('Erro ao carregar funcionários');
+    }
+  };
 
   const carregarVendas = async (start?: Date, end?: Date) => {
     try {
@@ -109,7 +120,7 @@ export function RelatorioVendas() {
       if (error) throw error;
 
       toast.success('Venda excluída com sucesso!');
-      carregarVendas(); // Atualiza as listas de vendas após exclusão
+      carregarVendas();
     } catch (error) {
       console.error('Erro ao excluir venda:', error);
       toast.error('Erro ao excluir venda');
@@ -125,7 +136,7 @@ export function RelatorioVendas() {
   const atualizarVenda = () => {
     setShowModal(false);
     toast.success('Venda atualizada com sucesso!');
-    carregarVendas(); // Atualiza as listas de vendas após edição
+    carregarVendas();
   };
 
   const fecharCaixa = async () => {
@@ -145,7 +156,7 @@ export function RelatorioVendas() {
       toast.success('Caixa fechado com sucesso!');
       setVendasAtivas([]);
       setTotaisAtivos({ dinheiro: 0, pix: 0, credito: 0, debito: 0, total: 0 });
-      carregarVendas(); // Recarregar vendas fechadas
+      carregarVendas();
     } catch (error) {
       console.error('Erro ao fechar o caixa:', error);
       toast.error('Erro ao fechar o caixa');
@@ -153,12 +164,12 @@ export function RelatorioVendas() {
   };
 
   const handleFilter = () => {
-    setIsFilterActive(true); // Ativa o filtro
+    setIsFilterActive(true);
     carregarVendas(startDate, endDate);
   };
 
   const clearFilter = () => {
-    setIsFilterActive(false); // Desativa o filtro
+    setIsFilterActive(false);
     setStartDate(null);
     setEndDate(null);
     carregarVendas();
@@ -172,7 +183,7 @@ export function RelatorioVendas() {
           console.log('Atualizando vendas...');
           carregarVendas();
         }
-      }, 1000); // 1 segundo
+      }, 1000);
     }
   }, [isFilterActive]);
 
@@ -221,7 +232,6 @@ export function RelatorioVendas() {
         </button>
       </div>
 
-      {/* Resumo Vendas Ativas */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
         <div className="card p-2 flex items-center gap-2">
           <FaMoneyBillWave size={20} className="text-green-600" />
@@ -262,10 +272,9 @@ export function RelatorioVendas() {
 
       <div className="mb-10">
         <h2 className="text-xl font-bold mb-4">Vendas Ativas</h2>
-        <TabelaVendas vendas={vendasAtivas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="ativas" />
+        <TabelaVendas vendas={vendasAtivas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="ativas" funcionarios={funcionarios} />
       </div>
 
-      {/* Resumo Vendas Fechadas */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
         <div className="card p-2 flex items-center gap-2">
           <FaMoneyBillWave size={20} className="text-green-600" />
@@ -306,7 +315,7 @@ export function RelatorioVendas() {
 
       <div>
         <h2 className="text-xl font-bold mb-4">Vendas Fechadas</h2>
-        <TabelaVendas vendas={vendasFechadas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="fechadas" />
+        <TabelaVendas vendas={vendasFechadas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="fechadas" funcionarios={funcionarios} />
       </div>
 
       <EditarVendaModal

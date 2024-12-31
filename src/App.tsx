@@ -1,30 +1,21 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { Toaster } from 'react-hot-toast';
 import { LoginPage } from './components/LoginPage';
 import { CadastroProduto } from './components/CadastroProduto';
 import { PDV } from './components/PDV';
 import { RelatorioVendas } from './components/RelatorioVendas';
+import { CadastroFuncionario } from './components/CadastroFuncionario';
 import { Header } from './components/Header';
 import Watermark from './components/Watermark';
 import 'bootstrap/dist/css/bootstrap.min.css';
-
-
-import { Package, ShoppingCart, BarChart } from 'lucide-react';
+import '@fortawesome/fontawesome-free/css/all.min.css'; // Certifique-se de importar o FontAwesome aqui
+import { Package, ShoppingCart, BarChart, Users } from 'lucide-react';
 
 function App() {
   const [session, setSession] = useState(null);
   const [tab, setTab] = useState('pdv');
 
-<main className="flex-grow max-w-7xl mx-auto p-4 pb-8">
-  {tab === 'produtos' && <CadastroProduto />}
-  {tab === 'pdv' && <PDV />}
-  {tab === 'relatorio' && <RelatorioVendas />}
-</main>
-
-
-
-  
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -101,6 +92,17 @@ function App() {
                 <BarChart className="mr-2" size={20} />
                 Relatório
               </button>
+              <button
+                onClick={() => setTab('funcionarios')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${
+                  tab === 'funcionarios'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Users className="mr-2" size={20} />
+                Funcionários
+              </button>
             </div>
           </div>
         </div>
@@ -110,6 +112,7 @@ function App() {
         {tab === 'produtos' && <CadastroProduto />}
         {tab === 'pdv' && <PDV />}
         {tab === 'relatorio' && <RelatorioVendas />}
+        {tab === 'funcionarios' && <CadastroFuncionario />}
       </main>
 
       <Watermark />

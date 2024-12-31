@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ShoppingCart, Trash2, Search, DollarSign, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Produto, ItemVenda, Venda } from '../types';
+import type { Produto, ItemVenda, Venda, Funcionario } from '../types';
 
 export function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -11,6 +11,8 @@ export function PDV() {
   const [busca, setBusca] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Venda['forma_pagamento']>('dinheiro');
   const [desconto, setDesconto] = useState<number | null>(null);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<string>('');
 
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
@@ -20,6 +22,7 @@ export function PDV() {
 
   useEffect(() => {
     carregarProdutos();
+    carregarFuncionarios();
   }, []);
 
   const carregarProdutos = async () => {
@@ -46,6 +49,17 @@ export function PDV() {
     }
   };
 
+  const carregarFuncionarios = async () => {
+    try {
+      const { data, error } = await supabase.from('funcionarios').select('*');
+      if (error) throw error;
+      setFuncionarios(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
+      toast.error('Erro ao carregar funcionários');
+    }
+  };
+
   const adicionarAoCarrinho = (produto: Produto, quantidade: number = 1) => {
     const item = carrinho.find(i => i.produto.id === produto.id);
     if (item) {
@@ -68,41 +82,48 @@ export function PDV() {
   const totalComDesconto = desconto ? total - (total * desconto) / 100 : total;
 
   const finalizarVenda = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error('Usuário não autenticado');
-        return;
-      }
-
-      if (carrinho.length === 0) {
-        toast.error('Adicione produtos ao carrinho');
-        return;
-      }
-
-      const venda = {
-        items: carrinho,
-        total: totalComDesconto,
-        forma_pagamento: formaPagamento,
-        desconto: desconto || 0, // Usa 0 se desconto for null
-        data: new Date(),
-        finalizada: true,
-        user_id: user.id,
-      };
-
-      const { error } = await supabase.from('vendas').insert([venda]);
-      if (error) throw error;
-
-      toast.success('Venda finalizada com sucesso!');
-      setCarrinho([]);
-      setDesconto(null);
-      setFormaPagamento('dinheiro');
-    } catch (error) {
-      console.error('Erro ao finalizar venda:', error);
-      toast.error('Erro ao finalizar venda');
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast.error('Usuário não autenticado');
+      return;
     }
-  };
+
+    if (carrinho.length === 0) {
+      toast.error('Adicione produtos ao carrinho');
+      return;
+    }
+
+    if (!funcionarioSelecionado) {
+      toast.error('Selecione um funcionário');
+      return;
+    }
+
+    const venda = {
+      items: carrinho,
+      total: totalComDesconto,
+      forma_pagamento: formaPagamento,
+      desconto: desconto || 0, // Usa 0 se desconto for null
+      data: new Date(),
+      finalizada: true,
+      user_id: user.id,
+      funcionario_id: funcionarioSelecionado
+    };
+
+    const { error } = await supabase.from('vendas').insert([venda]);
+    if (error) throw error;
+
+    toast.success('Venda finalizada com sucesso!');
+    setCarrinho([]);
+    setDesconto(null);
+    setFormaPagamento('dinheiro');
+    setFuncionarioSelecionado('');
+  } catch (error) {
+    console.error('Erro ao finalizar venda:', error);
+    toast.error('Erro ao finalizar venda');
+  }
+};
 
   if (loading) {
     return (
@@ -256,6 +277,19 @@ export function PDV() {
             placeholder="Desconto (%)"
             className="input-field"
           />
+
+          <select
+            value={funcionarioSelecionado}
+            onChange={(e) => setFuncionarioSelecionado(e.target.value)}
+            className="input-field"
+          >
+            <option value="">Selecione um funcionário</option>
+            {funcionarios.map(funcionario => (
+              <option key={funcionario.id} value={funcionario.id}>
+                {funcionario.nome}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="text-2xl font-semibold text-gray-900 mb-4 flex items-center justify-between">

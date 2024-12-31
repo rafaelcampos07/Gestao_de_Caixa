@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import { supabase } from "../lib/supabase";
 import { toast } from "react-hot-toast";
-import type { Venda } from "../types";
+import type { Venda, Funcionario } from "../types";
 
 interface EditarVendaModalProps {
   show: boolean;
@@ -30,6 +30,7 @@ interface Item {
 const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, venda, atualizarVenda, tipoTabela }) => {
   const [formData, setFormData] = useState<Venda | null>(null);
   const [total, setTotal] = useState<number>(0);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
 
   useEffect(() => {
     if (venda) {
@@ -40,6 +41,23 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       setFormData(null);
     }
   }, [venda]);
+
+  useEffect(() => {
+    if (show) {
+      carregarFuncionarios();
+    }
+  }, [show]);
+
+  const carregarFuncionarios = async () => {
+    try {
+      const { data, error } = await supabase.from('funcionarios').select('*');
+      if (error) throw error;
+      setFuncionarios(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar funcionários:', error);
+      toast.error('Erro ao carregar funcionários');
+    }
+  };
 
   const formatDateTime = (dateTime: string): string => {
     const date = new Date(dateTime);
@@ -124,6 +142,7 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
           desconto: formData.desconto,
           total,
           forma_pagamento: formData.forma_pagamento,
+          funcionario_id: formData.funcionario_id, // Adiciona o funcionario_id na atualização
         })
         .eq("id", formData.id)
         .select();
@@ -190,7 +209,26 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
             </Col>
           </Row>
           <Row className="mb-3">
-            <Col md={12}>
+            <Col md={6}>
+              <Form.Group controlId="formFuncionario">
+                <Form.Label>Funcionário</Form.Label>
+                <Form.Control
+                  as="select"
+                  name="funcionario_id"
+                  value={formData?.funcionario_id || ""}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Selecione o funcionário</option>
+                  {funcionarios.map((funcionario) => (
+                    <option key={funcionario.id} value={funcionario.id}>
+                      {funcionario.nome}
+                    </option>
+                  ))}
+                </Form.Control>
+              </Form.Group>
+            </Col>
+            <Col md={6}>
               <Form.Group controlId="formFormaPagamento">
                 <Form.Label>Forma de Pagamento</Form.Label>
                 <Form.Control
