@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface CartProps {
   items: any[];
@@ -19,7 +19,10 @@ export const Cart: React.FC<CartProps> = ({
   onChangeDesconto,
   onFinalizarVenda,
 }) => {
+  const [valorRecebido, setValorRecebido] = useState<number | null>(null);
+
   const total = items.reduce((acc, item) => acc + item.subtotal, 0) - (desconto || 0);
+  const troco = valorRecebido !== null ? valorRecebido - total : 0;
 
   return (
     <div className="card p-4 space-y-4">
@@ -70,10 +73,35 @@ export const Cart: React.FC<CartProps> = ({
             />
           </div>
         )}
+        {formaPagamento === 'dinheiro' && (
+          <div>
+            <label htmlFor="valorRecebido" className="block text-sm font-medium">
+              Valor Recebido
+            </label>
+            <input
+              type="number"
+              id="valorRecebido"
+              min="0"
+              step="0.01"
+              value={valorRecebido !== null && valorRecebido !== undefined ? valorRecebido : ''}
+              onChange={(e) =>
+                setValorRecebido(e.target.value ? parseFloat(e.target.value) : null)
+              }
+              placeholder="Valor Recebido"
+              className="input-field"
+            />
+          </div>
+        )}
         <div>
           <span className="block text-sm font-medium">Total:</span>
           <span className="text-lg font-semibold">R$ {total.toFixed(2)}</span>
         </div>
+        {formaPagamento === 'dinheiro' && valorRecebido !== null && valorRecebido >= total && (
+          <div>
+            <span className="block text-sm font-medium">Troco:</span>
+            <span className="text-lg font-semibold">R$ {troco.toFixed(2)}</span>
+          </div>
+        )}
         <button className="btn-primary w-full" onClick={onFinalizarVenda}>
           Finalizar Venda
         </button>

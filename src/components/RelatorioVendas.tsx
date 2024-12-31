@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import TabelaVendas from './TabelaVendas';
 import EditarVendaModal from './EditarVendaModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { AiOutlineSearch, AiOutlineDollarCircle } from 'react-icons/ai';
-import { FaMoneyBillWave, FaCreditCard, FaMoneyCheckAlt } from 'react-icons/fa';
+import { FaMoneyBillWave, FaCreditCard, FaMoneyCheckAlt, FaCashRegister } from 'react-icons/fa';
 import type { Venda, Funcionario } from '../types';
 
 export function RelatorioVendas() {
@@ -33,6 +34,9 @@ export function RelatorioVendas() {
   const [showModal, setShowModal] = useState(false);
   const [vendaAtual, setVendaAtual] = useState<Venda | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [vendaToDelete, setVendaToDelete] = useState<{ id: number, tabela: 'vendas' | 'caixas_fechados' } | null>(null);
+  const [isCloseCaixaConfirmModalOpen, setIsCloseCaixaConfirmModalOpen] = useState(false); // Novo estado
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -112,11 +116,11 @@ export function RelatorioVendas() {
     setTotais(totais);
   };
 
-  const excluirVenda = async (id: number, tabela: 'vendas' | 'caixas_fechados') => {
-    if (!confirm('Deseja realmente excluir esta venda?')) return;
+  const excluirVenda = async () => {
+    if (!vendaToDelete) return;
 
     try {
-      const { error } = await supabase.from(tabela).delete().eq('id', id);
+      const { error } = await supabase.from(vendaToDelete.tabela).delete().eq('id', vendaToDelete.id);
       if (error) throw error;
 
       toast.success('Venda excluída com sucesso!');
@@ -124,6 +128,9 @@ export function RelatorioVendas() {
     } catch (error) {
       console.error('Erro ao excluir venda:', error);
       toast.error('Erro ao excluir venda');
+    } finally {
+      setIsConfirmModalOpen(false);
+      setVendaToDelete(null);
     }
   };
 
@@ -139,9 +146,11 @@ export function RelatorioVendas() {
     carregarVendas();
   };
 
-  const fecharCaixa = async () => {
-    if (!confirm('Deseja realmente fechar o caixa?')) return;
+  const confirmarFecharCaixa = () => {
+    setIsCloseCaixaConfirmModalOpen(true);
+  };
 
+  const fecharCaixa = async () => {
     try {
       const { error: insertError } = await supabase.from('caixas_fechados').insert(vendasAtivas);
       if (insertError) throw insertError;
@@ -160,6 +169,8 @@ export function RelatorioVendas() {
     } catch (error) {
       console.error('Erro ao fechar o caixa:', error);
       toast.error('Erro ao fechar o caixa');
+    } finally {
+      setIsCloseCaixaConfirmModalOpen(false);
     }
   };
 
@@ -198,7 +209,11 @@ export function RelatorioVendas() {
   return (
     <div>
       <div className="flex justify-end mb-6">
-        <button onClick={fecharCaixa} className="btn-primary">
+        <button
+          onClick={confirmarFecharCaixa}
+          className="btn-custom"
+        >
+          <FaCashRegister size={24} />
           Fechar Caixa
         </button>
       </div>
@@ -272,7 +287,7 @@ export function RelatorioVendas() {
 
       <div className="mb-10">
         <h2 className="text-xl font-bold mb-4">Vendas Ativas</h2>
-        <TabelaVendas vendas={vendasAtivas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="ativas" funcionarios={funcionarios} />
+        <TabelaVendas vendas={vendasAtivas} excluirVenda={(id) => setVendaToDelete({ id, tabela: 'vendas' })} editarVenda={editarVenda} tipoTabela="ativas" funcionarios={funcionarios} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
@@ -315,7 +330,7 @@ export function RelatorioVendas() {
 
       <div>
         <h2 className="text-xl font-bold mb-4">Vendas Fechadas</h2>
-        <TabelaVendas vendas={vendasFechadas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="fechadas" funcionarios={funcionarios} />
+        <TabelaVendas vendas={vendasFechadas} excluirVenda={(id) => setVendaToDelete({ id, tabela: 'caixas_fechados' })} editarVenda={editarVenda} tipoTabela="fechadas" funcionarios={funcionarios} />
       </div>
 
       <EditarVendaModal
@@ -324,6 +339,20 @@ export function RelatorioVendas() {
         venda={vendaAtual}
         atualizarVenda={atualizarVenda}
         tipoTabela="ativas"
+      />
+
+      <ConfirmDeleteModal
+        show={isConfirmModalOpen}
+        handleClose={() => setIsConfirmModalOpen(false)}
+        handleConfirm={excluirVenda}
+        message="Deseja realmente excluir esta venda?"
+      />
+      
+      <ConfirmDeleteModal
+        show={isCloseCaixaConfirmModalOpen}
+        handleClose={() => setIsCloseCaixaConfirmModalOpen(false)}
+        handleConfirm={fecharCaixa}
+        message="Deseja realmente fechar o caixa?"
       />
     </div>
   );

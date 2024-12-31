@@ -3,6 +3,7 @@ import { Trash2, Edit3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import EditarVendaModal from './EditarVendaModal';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 import type { Venda, Funcionario } from '../types';
 
 interface TabelaVendasProps {
@@ -16,12 +17,13 @@ interface TabelaVendasProps {
 const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, editarVenda, tipoTabela, funcionarios }) => {
   const [vendaSelecionada, setVendaSelecionada] = useState<Venda | null>(null);
   const [showEditarModal, setShowEditarModal] = useState(false);
+  const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
+  const [vendaParaExcluir, setVendaParaExcluir] = useState<Venda | null>(null);
 
   const renderItensVenda = (itens) => {
     if (!Array.isArray(itens)) {
       itens = [];
     }
-
     return itens.map((item, index) => (
       <div key={index} className="flex justify-between items-center p-2">
         <span>{item.produto.nome} {item.quantidade}x</span>
@@ -30,8 +32,32 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
     ));
   };
 
-  const handleExcluirVenda = (id: number) => {
-    excluirVenda(id, tipoTabela === 'ativas' ? 'vendas' : 'caixas_fechados');
+  const handleExcluirVenda = (venda: Venda) => {
+    setVendaParaExcluir(venda);
+    setShowConfirmDeleteModal(true);
+  };
+
+  const confirmarExcluirVenda = async () => {
+    if (vendaParaExcluir) {
+      try {
+        const tabela = tipoTabela === 'ativas' ? 'vendas' : 'caixas_fechados';
+        const { error } = await supabase.from(tabela).delete().eq('id', vendaParaExcluir.id);
+        if (error) {
+          console.error('Erro ao excluir venda:', error);
+          toast.error('Erro ao excluir venda');
+          return;
+        }
+
+        toast.success('Venda excluída com sucesso!');
+        // Atualizar a lista de vendas após a exclusão
+        const novasVendas = vendas.filter((venda) => venda.id !== vendaParaExcluir.id);
+        //setVendas(novasVendas);
+     
+      } finally {
+        setShowConfirmDeleteModal(false);
+        setVendaParaExcluir(null);
+      }
+    }
   };
 
   const handleEditarVenda = (venda: Venda) => {
@@ -76,7 +102,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
                   <button onClick={() => handleEditarVenda(venda)} className="text-blue-600 hover:text-blue-800 mr-2">
                     <Edit3 size={20} />
                   </button>
-                  <button onClick={() => handleExcluirVenda(venda.id)} className="text-red-600 hover:text-red-800">
+                  <button onClick={() => handleExcluirVenda(venda)} className="text-red-600 hover:text-red-800">
                     <Trash2 size={20} />
                   </button>
                 </td>
@@ -93,6 +119,15 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
           venda={vendaSelecionada}
           atualizarVenda={() => setShowEditarModal(false)}
           tipoTabela={tipoTabela}
+        />
+      )}
+
+      {showConfirmDeleteModal && vendaParaExcluir && (
+        <ConfirmDeleteModal
+          show={showConfirmDeleteModal}
+          handleClose={() => setShowConfirmDeleteModal(false)}
+          handleConfirm={confirmarExcluirVenda}
+          message="Deseja realmente excluir esta venda?"
         />
       )}
     </div>

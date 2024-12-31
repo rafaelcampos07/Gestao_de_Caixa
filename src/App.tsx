@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { LoginPage } from './components/LoginPage';
 import { CadastroProduto } from './components/CadastroProduto';
 import { PDV } from './components/PDV';
@@ -11,10 +11,14 @@ import Watermark from './components/Watermark';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css'; // Certifique-se de importar o FontAwesome aqui
 import { Package, ShoppingCart, BarChart, Users } from 'lucide-react';
+import ConfirmDeleteModal from './components/ConfirmDeleteModal';
+
 
 function App() {
   const [session, setSession] = useState(null);
   const [tab, setTab] = useState('pdv');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentProductId, setCurrentProductId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -38,6 +42,31 @@ function App() {
       </>
     );
   }
+
+  const handleDelete = async () => {
+    if (currentProductId) {
+      try {
+        const { error } = await supabase.from('produtos').delete().eq('id', currentProductId);
+        if (error) throw error;
+        toast.success('Produto excluído com sucesso!');
+        // Recarregar produtos após exclusão
+        if (tab === 'produtos') {
+          setTab('pdv'); // Temporariamente mudar de aba para forçar recarregamento
+          setTimeout(() => setTab('produtos'), 0); // Voltar para a aba de produtos
+        }
+      } catch (error) {
+        toast.error('Erro ao excluir produto');
+      } finally {
+        setIsModalOpen(false);
+        setCurrentProductId(null);
+      }
+    }
+  };
+
+  const openModal = (id: string) => {
+    setCurrentProductId(id);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50">
@@ -109,13 +138,20 @@ function App() {
       </nav>
 
       <main className="flex-grow max-w-7xl mx-auto p-4">
-        {tab === 'produtos' && <CadastroProduto />}
+        {tab === 'produtos' && <CadastroProduto openModal={openModal} />}
         {tab === 'pdv' && <PDV />}
         {tab === 'relatorio' && <RelatorioVendas />}
         {tab === 'funcionarios' && <CadastroFuncionario />}
       </main>
 
       <Watermark />
+
+      <ConfirmDeleteModal
+        show={isModalOpen}
+        handleClose={() => setIsModalOpen(false)}
+        handleConfirm={handleDelete}
+        message="Tem certeza que deseja excluir este produto?"
+      />
     </div>
   );
 }

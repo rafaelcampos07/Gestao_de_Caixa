@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase'; // Certifique-se de que o caminho está correto
-import toast from 'react-hot-toast'; // Importação do react-hot-toast
-import '@fortawesome/fontawesome-free/css/all.min.css'; // Importação do Font Awesome
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import ConfirmDeleteModal from './ConfirmDeleteModal';
 
 export const CadastroFuncionario = () => {
   const [nome, setNome] = useState('');
@@ -11,26 +12,49 @@ export const CadastroFuncionario = () => {
   const [funcionarios, setFuncionarios] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentFuncionarioId, setCurrentFuncionarioId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [funcionarioToDelete, setFuncionarioToDelete] = useState(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     carregarFuncionarios();
 
-    // Configurar o intervalo para atualizar os dados a cada 1 segundo
     intervalRef.current = setInterval(() => {
       console.log('Atualizando funcionários...');
       carregarFuncionarios();
-    }, 1000); // 1 segundo
+    }, 1000);
 
-    // Limpar o intervalo ao desmontar o componente
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
+  // Função para renovar o token
+  const renewToken = async () => {
+    try {
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        throw error;
+      }
+      return data.session.access_token;
+    } catch (error) {
+      console.error('Erro ao renovar o token:', error);
+      toast.error('Erro ao renovar o token de autenticação.');
+      throw error;
+    }
+  };
+
+  // Função para carregar os funcionários
   const carregarFuncionarios = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        if (userError.message.includes("JWT expired")) {
+          await renewToken();
+        } else {
+          throw userError;
+        }
+      }
       if (!user) {
         toast.error('Erro ao obter usuário autenticado.');
         return;
@@ -39,9 +63,15 @@ export const CadastroFuncionario = () => {
       const { data, error } = await supabase
         .from('funcionarios')
         .select('*')
-        .eq('user_id', user.id); // Filtra pelo user_id do usuário autenticado
+        .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("JWT expired")) {
+          await renewToken();
+          return carregarFuncionarios();
+        }
+        throw error;
+      }
       setFuncionarios(data || []);
     } catch (error) {
       console.error('Erro ao carregar funcionários:', error);
@@ -68,7 +98,6 @@ export const CadastroFuncionario = () => {
     }
 
     if (isEditing && currentFuncionarioId) {
-      // Atualizar funcionário existente
       const { data, error } = await supabase
         .from('funcionarios')
         .update({ nome, celular, email, funcao })
@@ -85,10 +114,9 @@ export const CadastroFuncionario = () => {
         limparCampos();
       }
     } else {
-      // Inserir novo funcionário
       const { data, error } = await supabase
         .from('funcionarios')
-        .insert([{ nome, celular, email, funcao, user_id: user.id }]); // Inserir com user_id
+        .insert([{ nome, celular, email, funcao, user_id: user.id }]);
 
       if (error) {
         toast.error('Erro ao cadastrar funcionário.');
@@ -112,19 +140,29 @@ export const CadastroFuncionario = () => {
     setFuncao(funcionario.funcao);
   };
 
-  const handleDelete = async (id) => {
-    const { error } = await supabase
-      .from('funcionarios')
-      .delete()
-      .eq('id', id);
+  const openDeleteModal = (funcionario) => {
+    setFuncionarioToDelete(funcionario);
+    setIsModalOpen(true);
+  };
 
-    if (error) {
-      toast.error('Erro ao excluir funcionário.');
-      console.error('Erro ao excluir funcionário:', error);
-    } else {
-      toast.success('Funcionário excluído com sucesso.');
-      setFuncionarios(funcionarios.filter(f => f.id !== id));
-      limparCampos();
+  const handleConfirmDelete = async () => {
+    if (funcionarioToDelete) {
+      const { error } = await supabase
+        .from('funcionarios')
+        .delete()
+        .eq('id', funcionarioToDelete.id);
+
+      if (error) {
+        toast.error('Erro ao excluir funcionário.');
+        console.error('Erro ao excluir funcionário:', error);
+      } else {
+        toast.success('Funcionário excluído com sucesso.');
+        setFuncionarios(funcionarios.filter(f => f.id !== funcionarioToDelete.id));
+        limparCampos();
+      }
+
+      setIsModalOpen(false);
+      setFuncionarioToDelete(null);
     }
   };
 
@@ -220,7 +258,7 @@ export const CadastroFuncionario = () => {
                   </button>
                   <button
                     className="btn-secondary"
-                    onClick={() => handleDelete(funcionario.id)}
+                    onClick={() => openDeleteModal(funcionario)}
                   >
                     <i className="fas fa-trash text-red-500"></i>
                   </button>
@@ -230,6 +268,13 @@ export const CadastroFuncionario = () => {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDeleteModal
+        show={isModalOpen}
+        handleClose={() => setIsModalOpen(false)}
+        handleConfirm={handleConfirmDelete}
+        message="Tem certeza que deseja excluir este funcionário?"
+      />
     </div>
   );
 };

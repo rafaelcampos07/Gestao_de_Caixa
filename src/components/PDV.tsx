@@ -11,6 +11,7 @@ export function PDV() {
   const [busca, setBusca] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Venda['forma_pagamento']>('dinheiro');
   const [desconto, setDesconto] = useState<number | null>(null);
+  const [valorRecebido, setValorRecebido] = useState<number | null>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<string>('');
 
@@ -78,52 +79,53 @@ export function PDV() {
   };
 
   const total = carrinho.reduce((acc, item) => acc + item.subtotal, 0);
-
   const totalComDesconto = desconto ? total - (total * desconto) / 100 : total;
+  const troco = valorRecebido !== null ? valorRecebido - totalComDesconto : 0;
 
   const finalizarVenda = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast.error('Usuário não autenticado');
-      return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Usuário não autenticado');
+        return;
+      }
+
+      if (carrinho.length === 0) {
+        toast.error('Adicione produtos ao carrinho');
+        return;
+      }
+
+      if (!funcionarioSelecionado) {
+        toast.error('Selecione um funcionário');
+        return;
+      }
+
+      const venda = {
+        items: carrinho,
+        total: totalComDesconto,
+        forma_pagamento: formaPagamento,
+        desconto: desconto || 0,
+        data: new Date(),
+        finalizada: true,
+        user_id: user.id,
+        funcionario_id: funcionarioSelecionado
+      };
+
+      const { error } = await supabase.from('vendas').insert([venda]);
+      if (error) throw error;
+
+      toast.success('Venda finalizada com sucesso!');
+      setCarrinho([]);
+      setDesconto(null);
+      setFormaPagamento('dinheiro');
+      setFuncionarioSelecionado('');
+      setValorRecebido(null);
+    } catch (error) {
+      console.error('Erro ao finalizar venda:', error);
+      toast.error('Erro ao finalizar venda');
     }
-
-    if (carrinho.length === 0) {
-      toast.error('Adicione produtos ao carrinho');
-      return;
-    }
-
-    if (!funcionarioSelecionado) {
-      toast.error('Selecione um funcionário');
-      return;
-    }
-
-    const venda = {
-      items: carrinho,
-      total: totalComDesconto,
-      forma_pagamento: formaPagamento,
-      desconto: desconto || 0, // Usa 0 se desconto for null
-      data: new Date(),
-      finalizada: true,
-      user_id: user.id,
-      funcionario_id: funcionarioSelecionado
-    };
-
-    const { error } = await supabase.from('vendas').insert([venda]);
-    if (error) throw error;
-
-    toast.success('Venda finalizada com sucesso!');
-    setCarrinho([]);
-    setDesconto(null);
-    setFormaPagamento('dinheiro');
-    setFuncionarioSelecionado('');
-  } catch (error) {
-    console.error('Erro ao finalizar venda:', error);
-    toast.error('Erro ao finalizar venda');
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -198,7 +200,7 @@ export function PDV() {
                     estoque: 0
                   };
                   adicionarAoCarrinho(produtoAvulso, novoProduto.quantidade);
-                  setNovoProduto({ nome: '', preco: 0, quantidade: 1 });
+                  setNovoProduto({ nome: '', preco: null, quantidade: 1 });
                 }} 
                 className="btn-primary w-full"
               >
@@ -278,6 +280,17 @@ export function PDV() {
             className="input-field"
           />
 
+          {formaPagamento === 'dinheiro' && (
+            <input
+              type="number"
+              step="0.01"
+              value={valorRecebido ?? ''}
+              onChange={(e) => setValorRecebido(e.target.value ? parseFloat(e.target.value) : null)}
+              placeholder="Valor Recebido"
+              className="input-field"
+            />
+          )}
+
           <select
             value={funcionarioSelecionado}
             onChange={(e) => setFuncionarioSelecionado(e.target.value)}
@@ -296,6 +309,13 @@ export function PDV() {
           <span className="text-sm font-medium text-gray-600">Total:</span>
           <span>R$ {totalComDesconto.toFixed(2)}</span>
         </div>
+
+        {formaPagamento === 'dinheiro' && valorRecebido !== null && valorRecebido >= totalComDesconto && (
+          <div className="text-2xl font-semibold text-red-600 mb-4 flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-600">Troco:</span>
+            <span>R$ {troco.toFixed(2)}</span>
+          </div>
+        )}
 
         <button onClick={finalizarVenda} className="btn-primary w-full">
           <DollarSign />
