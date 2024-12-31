@@ -7,6 +7,7 @@ import { PDV } from './components/PDV';
 import { RelatorioVendas } from './components/RelatorioVendas';
 import { Header } from './components/Header';
 import Watermark from './components/Watermark';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 
 import { Package, ShoppingCart, BarChart } from 'lucide-react';

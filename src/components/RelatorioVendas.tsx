@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
-import { TabelaVendas } from './TabelaVendas';
+import TabelaVendas from './TabelaVendas';
+import EditarVendaModal from './EditarVendaModal';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { AiOutlineSearch, AiOutlineDollarCircle } from 'react-icons/ai';
@@ -14,22 +15,41 @@ export function RelatorioVendas() {
   const [totaisAtivos, setTotaisAtivos] = useState({
     dinheiro: 0,
     pix: 0,
-    cartao: 0,
+    credito: 0,
+    debito: 0,
     total: 0,
   });
   const [totaisFechados, setTotaisFechados] = useState({
     dinheiro: 0,
     pix: 0,
-    cartao: 0,
+    credito: 0,
+    debito: 0,
     total: 0,
   });
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [vendaAtual, setVendaAtual] = useState<Venda | null>(null);
+  const [isFilterActive, setIsFilterActive] = useState(false); // Novo estado para controlar o filtro de data
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     carregarVendas();
-  }, []);
+
+    // Configurar o intervalo para atualizar os dados a cada 1 segundo
+    intervalRef.current = setInterval(() => {
+      if (!isFilterActive) {
+        console.log('Atualizando vendas...');
+        carregarVendas();
+      }
+    }, 1000); // 1 segundo
+
+    // Limpar o intervalo ao desmontar o componente
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isFilterActive]);
 
   const carregarVendas = async (start?: Date, end?: Date) => {
     try {
@@ -47,13 +67,11 @@ export function RelatorioVendas() {
         queryFechadas = queryFechadas.gte('data', start.toISOString()).lte('data', end.toISOString());
       }
 
-      // Carregar vendas ativas
       const { data: ativas, error: errorAtivas } = await queryAtivas;
       if (errorAtivas) throw errorAtivas;
       setVendasAtivas(ativas || []);
       calcularTotais(ativas || [], setTotaisAtivos);
 
-      // Carregar vendas fechadas
       const { data: fechadas, error: errorFechadas } = await queryFechadas;
       if (errorFechadas) throw errorFechadas;
       setVendasFechadas(fechadas || []);
@@ -72,11 +90,12 @@ export function RelatorioVendas() {
         const { forma_pagamento, total } = venda;
         if (forma_pagamento === 'dinheiro') acc.dinheiro += total;
         if (forma_pagamento === 'pix') acc.pix += total;
-        if (['credito', 'debito'].includes(forma_pagamento)) acc.cartao += total;
+        if (forma_pagamento === 'credito') acc.credito += total;
+        if (forma_pagamento === 'debito') acc.debito += total;
         acc.total += total;
         return acc;
       },
-      { dinheiro: 0, pix: 0, cartao: 0, total: 0 }
+      { dinheiro: 0, pix: 0, credito: 0, debito: 0, total: 0 }
     );
 
     setTotais(totais);
@@ -90,30 +109,32 @@ export function RelatorioVendas() {
       if (error) throw error;
 
       toast.success('Venda excluída com sucesso!');
-
-      if (tabela === 'vendas') {
-        setVendasAtivas(vendasAtivas.filter((venda) => venda.id !== id));
-        calcularTotais(vendasAtivas.filter((venda) => venda.id !== id), setTotaisAtivos);
-      } else if (tabela === 'caixas_fechados') {
-        setVendasFechadas(vendasFechadas.filter((venda) => venda.id !== id));
-        calcularTotais(vendasFechadas.filter((venda) => venda.id !== id), setTotaisFechados);
-      }
+      carregarVendas(); // Atualiza as listas de vendas após exclusão
     } catch (error) {
       console.error('Erro ao excluir venda:', error);
       toast.error('Erro ao excluir venda');
     }
   };
 
+  const editarVenda = (id: number) => {
+    const venda = [...vendasAtivas, ...vendasFechadas].find((venda) => venda.id === id);
+    setVendaAtual(venda || null);
+    setShowModal(true);
+  };
+
+  const atualizarVenda = () => {
+    setShowModal(false);
+    toast.success('Venda atualizada com sucesso!');
+    carregarVendas(); // Atualiza as listas de vendas após edição
+  };
+
   const fecharCaixa = async () => {
     if (!confirm('Deseja realmente fechar o caixa?')) return;
 
     try {
-      // Mover vendas ativas para caixas_fechados
       const { error: insertError } = await supabase.from('caixas_fechados').insert(vendasAtivas);
-
       if (insertError) throw insertError;
 
-      // Deletar vendas da tabela vendas
       const { error: deleteError } = await supabase
         .from('vendas')
         .delete()
@@ -123,7 +144,7 @@ export function RelatorioVendas() {
 
       toast.success('Caixa fechado com sucesso!');
       setVendasAtivas([]);
-      setTotaisAtivos({ dinheiro: 0, pix: 0, cartao: 0, total: 0 });
+      setTotaisAtivos({ dinheiro: 0, pix: 0, credito: 0, debito: 0, total: 0 });
       carregarVendas(); // Recarregar vendas fechadas
     } catch (error) {
       console.error('Erro ao fechar o caixa:', error);
@@ -132,14 +153,28 @@ export function RelatorioVendas() {
   };
 
   const handleFilter = () => {
+    setIsFilterActive(true); // Ativa o filtro
     carregarVendas(startDate, endDate);
   };
 
   const clearFilter = () => {
+    setIsFilterActive(false); // Desativa o filtro
     setStartDate(null);
     setEndDate(null);
     carregarVendas();
   };
+
+  useEffect(() => {
+    if (!isFilterActive && intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        if (!isFilterActive) {
+          console.log('Atualizando vendas...');
+          carregarVendas();
+        }
+      }, 1000); // 1 segundo
+    }
+  }, [isFilterActive]);
 
   if (loading) {
     return (
@@ -187,78 +222,100 @@ export function RelatorioVendas() {
       </div>
 
       {/* Resumo Vendas Ativas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4 flex items-center gap-2">
-          <FaMoneyBillWave size={24} className="text-green-600" />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
+        <div className="card p-2 flex items-center gap-2">
+          <FaMoneyBillWave size={20} className="text-green-600" />
           <div>
             <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-2">
-          <FaMoneyCheckAlt size={24} className="text-blue-600" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaMoneyCheckAlt size={20} className="text-blue-600" />
           <div>
             <div className="text-sm font-medium text-gray-600">PIX</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-2">
-          <FaCreditCard size={24} className="text-purple-600" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaCreditCard size={20} className="text-purple-600" />
           <div>
-            <div className="text-sm font-medium text-gray-600">Cartão</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.cartao.toFixed(2)}</div>
+            <div className="text-sm font-medium text-gray-600">Crédito</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.credito.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 bg-indigo-600 flex items-center gap-2">
-          <AiOutlineDollarCircle size={24} className="text-white" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaCreditCard size={20} className="text-purple-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Débito</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.debito.toFixed(2)}</div>
+          </div>
+        </div>
+        <div className="card p-2 bg-indigo-600 flex items-center gap-2">
+          <AiOutlineDollarCircle size={20} className="text-white" />
           <div>
             <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-            <div className="text-2xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
           </div>
         </div>
       </div>
 
       <div className="mb-10">
         <h2 className="text-xl font-bold mb-4">Vendas Ativas</h2>
-        <TabelaVendas vendas={vendasAtivas} excluirVenda={(id) => excluirVenda(id, 'vendas')} />
+        <TabelaVendas vendas={vendasAtivas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="ativas" />
       </div>
 
       {/* Resumo Vendas Fechadas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4 flex items-center gap-2">
-          <FaMoneyBillWave size={24} className="text-green-600" />
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
+        <div className="card p-2 flex items-center gap-2">
+          <FaMoneyBillWave size={20} className="text-green-600" />
           <div>
             <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-2">
-          <FaMoneyCheckAlt size={24} className="text-blue-600" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaMoneyCheckAlt size={20} className="text-blue-600" />
           <div>
             <div className="text-sm font-medium text-gray-600">PIX</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-2">
-          <FaCreditCard size={24} className="text-purple-600" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaCreditCard size={20} className="text-purple-600" />
           <div>
-            <div className="text-sm font-medium text-gray-600">Cartão</div>
-            <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.cartao.toFixed(2)}</div>
+            <div className="text-sm font-medium text-gray-600">Crédito</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.credito.toFixed(2)}</div>
           </div>
         </div>
-        <div className="card p-4 bg-indigo-600 flex items-center gap-2">
-          <AiOutlineDollarCircle size={24} className="text-white" />
+        <div className="card p-2 flex items-center gap-2">
+          <FaCreditCard size={20} className="text-purple-600" />
+          <div>
+            <div className="text-sm font-medium text-gray-600">Débito</div>
+            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.debito.toFixed(2)}</div>
+          </div>
+        </div>
+        <div className="card p-2 bg-indigo-600 flex items-center gap-2">
+          <AiOutlineDollarCircle size={20} className="text-white" />
           <div>
             <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-            <div className="text-2xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
+            <div className="text-xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
           </div>
         </div>
       </div>
 
       <div>
         <h2 className="text-xl font-bold mb-4">Vendas Fechadas</h2>
-        <TabelaVendas vendas={vendasFechadas} excluirVenda={(id) => excluirVenda(id, 'caixas_fechados')} />
+        <TabelaVendas vendas={vendasFechadas} excluirVenda={excluirVenda} editarVenda={editarVenda} tipoTabela="fechadas" />
       </div>
+
+      <EditarVendaModal
+        show={showModal}
+        handleClose={() => setShowModal(false)}
+        venda={vendaAtual}
+        atualizarVenda={atualizarVenda}
+        tipoTabela="ativas"
+      />
     </div>
   );
 }
