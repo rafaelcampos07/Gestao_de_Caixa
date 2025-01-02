@@ -50,7 +50,12 @@ function App() {
     } else {
       setSession(null);
       toast.success('Desconectado com sucesso');
+      setLogoutModalOpen(false); // Fechar o modal de logout após sair
     }
+  };
+
+  const handleCloseLogoutModal = () => {
+    setLogoutModalOpen(false); // Fechar o modal de logout quando cancelar
   };
 
   if (!session) {
@@ -213,7 +218,7 @@ function App() {
       {/* Modal de confirmação para logout */}
       <ConfirmDeleteModal
         show={logoutModalOpen}
-        handleClose={() => setLogoutModalOpen(false)}
+        handleClose={handleCloseLogoutModal}
         handleConfirm={handleLogout}
         message="Tem certeza que deseja sair?"
       />
