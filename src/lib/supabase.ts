@@ -40,26 +40,3 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
-
-export async function handleSupabaseError(error: unknown) {
-  if (error instanceof Error) {
-    console.error('Supabase error:', error);
-    
-    // Handle auth errors
-    if ('__isAuthError' in error) {
-      if (error.message.includes('refresh_token_not_found')) {
-        await supabase.auth.signOut();
-        return 'Your session has expired. Please sign in again.';
-      }
-      return 'Authentication error. Please try signing in again.';
-    }
-    
-    // Handle network errors
-    if (error.message.includes('Failed to fetch')) {
-      return 'Connection error. Please check your internet connection.';
-    }
-    
-    return error.message;
-  }
-  return 'An unexpected error occurred';
-}

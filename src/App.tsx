@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import toast, { Toaster } from 'react-hot-toast';
 import { LoginPage } from './components/LoginPage';
@@ -6,6 +7,7 @@ import { CadastroProduto } from './components/CadastroProduto';
 import { PDV } from './components/PDV';
 import { RelatorioVendas } from './components/RelatorioVendas';
 import { CadastroFuncionario } from './components/CadastroFuncionario';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 import Watermark from './components/Watermark';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import { Package, ShoppingCart, BarChart, Users } from 'lucide-react';
@@ -57,15 +59,6 @@ function App() {
   const handleCloseLogoutModal = () => {
     setLogoutModalOpen(false); // Fechar o modal de logout quando cancelar
   };
-
-  if (!session) {
-    return (
-      <>
-        <LoginPage />
-        <Watermark />
-      </>
-    );
-  }
 
   const handleDelete = async () => {
     if (currentProductId) {
@@ -128,101 +121,127 @@ function App() {
     </div>
   );
 
+  if (!session) {
+    return (
+      <>
+        <LoginPage />
+        <Watermark />
+      </>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen bg-neutral-50">
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#fff',
-            color: '#333',
-            borderRadius: '0.75rem',
-            border: '1px solid #e5e7eb',
-          },
-        }}
-      />
-      {isMobile ? (
-        <>
-          <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, backgroundColor: '#4f46e5' }}>
+    <Router>
+      <div className="flex flex-col min-h-screen bg-neutral-50">
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: '#fff',
+              color: '#333',
+              borderRadius: '0.75rem',
+              border: '1px solid #e5e7eb',
+            },
+          }}
+        />
+        {isMobile ? (
+          <>
+            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, backgroundColor: '#4f46e5' }}>
+              <Toolbar>
+                <IconButton
+                  edge="start"
+                  color="inherit"
+                  aria-label="menu"
+                  onClick={toggleDrawer(true)}
+                >
+                  <MenuIcon />
+                </IconButton>
+                <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
+                  Gestão de Caixa
+                </Typography>
+                {session && session.user && (
+                  <>
+                    <Typography variant="body2" noWrap sx={{ marginRight: 2 }}>
+                      {session.user.email}
+                    </Typography>
+                    <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
+                      Sair
+                    </Button>
+                  </>
+                )}
+              </Toolbar>
+            </AppBar>
+            <Drawer
+              anchor="left"
+              open={drawerOpen}
+              onClose={toggleDrawer(false)}
+              sx={{
+                '& .MuiDrawer-paper': {
+                  boxSizing: 'border-box',
+                  width: 240,
+                },
+              }}
+            >
+              <Toolbar />
+              <Divider />
+              {drawerContent}
+            </Drawer>
+          </>
+        ) : (
+          <AppBar position="static" sx={{ backgroundColor: '#4f46e5' }}>
             <Toolbar>
-              <IconButton
-                edge="start"
-                color="inherit"
-                aria-label="menu"
-                onClick={toggleDrawer(true)}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-                Gestão de Caixa
-              </Typography>
-              <Typography variant="body2" noWrap sx={{ marginRight: 2 }}>
-                {session.user.email}
-              </Typography>
-              <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
-                Sair
-              </Button>
+              <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)} textColor="inherit" indicatorColor="secondary" className="tabs-left">
+                <Tab value="produtos" label="Produtos" icon={<Package />} iconPosition="start" />
+                <Tab value="funcionarios" label="Funcionários" icon={<Users />} iconPosition="start" />
+                <Tab value="pdv" label="PDV" icon={<ShoppingCart />} iconPosition="start" />
+                <Tab value="relatorio" label="Relatório" icon={<BarChart />} iconPosition="start" />
+              </Tabs>
+              {session && session.user && (
+                <>
+                  <Typography variant="body2" noWrap sx={{ flexGrow: 1, textAlign: 'right', marginRight: 2 }}>
+                    {session.user.email}
+                  </Typography>
+                  <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
+                    Sair
+                  </Button>
+                </>
+              )}
             </Toolbar>
           </AppBar>
-          <Drawer
-            anchor="left"
-            open={drawerOpen}
-            onClose={toggleDrawer(false)}
-            sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: 240,
-              },
-            }}
-          >
-            <Toolbar />
-            <Divider />
-            {drawerContent}
-          </Drawer>
-        </>
-      ) : (
-        <AppBar position="static" sx={{ backgroundColor: '#4f46e5' }}>
-          <Toolbar>
-            <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)} textColor="inherit" indicatorColor="secondary" className="tabs-left">
-              <Tab value="produtos" label="Produtos" icon={<Package />} iconPosition="start" />
-              <Tab value="funcionarios" label="Funcionários" icon={<Users />} iconPosition="start" />
-              <Tab value="pdv" label="PDV" icon={<ShoppingCart />} iconPosition="start" />
-              <Tab value="relatorio" label="Relatório" icon={<BarChart />} iconPosition="start" />
-            </Tabs>
-            <Typography variant="body2" noWrap sx={{ flexGrow: 1, textAlign: 'right', marginRight: 2 }}>
-              {session.user.email}
-            </Typography>
-            <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
-              Sair
-            </Button>
-          </Toolbar>
-        </AppBar>
-      )}
+        )}
 
-      <main className="flex-grow max-w-7xl mx-auto p-4">
-        {tab === 'produtos' && <CadastroProduto openModal={openModal} />}
-        {tab === 'pdv' && <PDV />}
-        {tab === 'relatorio' && <RelatorioVendas />}
-        {tab === 'funcionarios' && <CadastroFuncionario />}
-      </main>
+        <main className="flex-grow max-w-7xl mx-auto p-4">
+          <Routes>
+            <Route path="/" element={
+              <>
+                {tab === 'produtos' && <CadastroProduto openModal={openModal} />}
+                {tab === 'pdv' && <PDV />}
+                {tab === 'relatorio' && <RelatorioVendas />}
+                {tab === 'funcionarios' && <CadastroFuncionario />}
+              </>
+            } />
+            <Route path="/update-password" element={<ResetPasswordPage />} />
+          </Routes>
+        </main>
 
-      <Watermark />
+        <Watermark />
 
-      <ConfirmDeleteModal
-        show={isModalOpen}
-        handleClose={() => setIsModalOpen(false)}
-        handleConfirm={handleDelete}
-        message="Tem certeza que deseja excluir este produto?"
-      />
+        <ConfirmDeleteModal
+          show={isModalOpen}
+          handleClose={() => setIsModalOpen(false)}
+          handleConfirm={handleDelete}
+          message="Tem certeza que deseja excluir este produto?"
+        />
 
-      {/* Modal de confirmação para logout */}
-      <ConfirmDeleteModal
-        show={logoutModalOpen}
-        handleClose={handleCloseLogoutModal}
-        handleConfirm={handleLogout}
-        message="Tem certeza que deseja sair?"
-      />
-    </div>
+        {/* Modal de confirmação para logout */}
+        <ConfirmDeleteModal
+          show={logoutModalOpen}
+          handleClose={handleCloseLogoutModal}
+          handleConfirm={handleLogout}
+          message="Tem certeza que deseja sair?"
+        />
+      </div>
+    </Router>
   );
 }
 
