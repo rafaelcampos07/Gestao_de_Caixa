@@ -133,16 +133,12 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
     const tabela = tipoTabela === 'ativas' ? 'vendas' : 'caixas_fechados';
 
     try {
-      console.log('Updating with data:', formData);
       const { data, error } = await supabase
         .from(tabela)
         .update({
-          data: formData.data,
-          items: formData.items,
-          desconto: formData.desconto,
+          ...formData,
+          data: new Date(formData.data).toISOString(), // Ensure the date is in ISO format
           total,
-          forma_pagamento: formData.forma_pagamento,
-          funcionario_id: formData.funcionario_id, // Adiciona o funcionario_id na atualização
         })
         .eq("id", formData.id)
         .select();

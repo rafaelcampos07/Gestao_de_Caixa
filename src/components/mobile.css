@@ -1,0 +1,17 @@
+/* mobile.css */
+body {
+  font-size: 14px;
+  padding: 10px;
+}
+
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.mobile-hide {
+  display: none;
+}
+
+/* Adicione mais estilos específicos para mobile aqui */

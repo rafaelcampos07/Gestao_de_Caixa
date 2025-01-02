@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Gestão de Caixa</title>
+    <link rel="stylesheet" href="/assets/index-DzWP-q-G.css">
+    <script>
+      // Detecta se o dispositivo é mobile
+      function isMobile() {
+        return /Mobi|Android/i.test(navigator.userAgent);
+      }
+
+      // Carrega o CSS específico para mobile
+      function loadMobileCSS() {
+        if (isMobile()) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = '/src/styles/mobile.css';
+          document.head.appendChild(link);
+        }
+      }
+
+      // Chama a função para carregar o CSS mobile
+      window.onload = loadMobileCSS;
+    </script>
   </head>
   <body>
     <div id="root"></div>

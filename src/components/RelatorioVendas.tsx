@@ -152,9 +152,16 @@ export function RelatorioVendas() {
 
   const fecharCaixa = async () => {
     try {
-      const { error: insertError } = await supabase.from('caixas_fechados').insert(vendasAtivas);
+      // Insere as vendas ativas no "caixas_fechados"
+      const { error: insertError } = await supabase.from('caixas_fechados').insert(
+        vendasAtivas.map(venda => ({
+          ...venda,
+          data: new Date(venda.data).toISOString() // Garante que a data está em formato ISO
+        }))
+      );
       if (insertError) throw insertError;
 
+      // Deleta as vendas ativas do "vendas"
       const { error: deleteError } = await supabase
         .from('vendas')
         .delete()

@@ -1,0 +1,51 @@
+@media (max-width: 768px) {
+  /* Remova os cantos arredondados e sombras das cartas, além de remover as bordas laterais */
+  .card {
+    @apply rounded-none shadow-none border-x-0;
+  }
+
+  /* Ajusta o tamanho do texto e o padding dos campos de entrada */
+  .input-field {
+    @apply text-base py-3;
+  }
+
+  /* Ajusta o padding e o tamanho do texto dos botões */
+  .btn-primary, .btn-secondary {
+    @apply py-3 text-base;
+  }
+
+  /* Torna a tabela responsiva, permitindo o scroll horizontal */
+  .table-responsive {
+    @apply block w-full overflow-x-auto -mx-4 px-4;
+  }
+
+  /* Ajusta a largura da tabela para se adaptar ao contêiner */
+  .table-responsive table {
+    @apply w-max min-w-full;
+  }
+
+  /* Empilha elementos verticalmente com espaçamento entre eles */
+  .mobile-stack {
+    @apply flex flex-col gap-2;
+  }
+
+  /* Cria uma grade de 2 colunas com espaçamento entre os itens */
+  .mobile-grid {
+    @apply grid grid-cols-2 gap-2;
+  }
+
+  /* Esconde elementos em dispositivos móveis */
+  .mobile-hide {
+    @apply hidden;
+  }
+
+  /* Mostra elementos somente em dispositivos móveis */
+  .mobile-show {
+    @apply block;
+  }
+
+  /* Define a largura dos elementos como 100% */
+  .mobile-full {
+    @apply w-full;
+  }
+}
