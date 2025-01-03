@@ -1,0 +1,24 @@
+/* Garantir que os contêineres de produto tenham a mesma altura */
+.product-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Estilo para o botão de adicionar ao carrinho */
+.add-to-cart-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: none;
+  border-radius: 50%;
+  background-color: #4f46e5; /* Indigo */
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.add-to-cart-button:hover {
+  background-color: #4338ca; /* Indigo dark */
+}

@@ -36,7 +36,7 @@ export function RelatorioVendas() {
   const [isFilterActive, setIsFilterActive] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [vendaToDelete, setVendaToDelete] = useState<{ id: number, tabela: 'vendas' | 'caixas_fechados' } | null>(null);
-  const [isCloseCaixaConfirmModalOpen, setIsCloseCaixaConfirmModalOpen] = useState(false); // Novo estado
+  const [isCloseCaixaConfirmModalOpen, setIsCloseCaixaConfirmModalOpen] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -78,8 +78,13 @@ export function RelatorioVendas() {
       let queryFechadas = supabase.from('caixas_fechados').select('*').eq('user_id', user.id);
 
       if (start && end) {
-        queryAtivas = queryAtivas.gte('data', start.toISOString()).lte('data', end.toISOString());
-        queryFechadas = queryFechadas.gte('data', start.toISOString()).lte('data', end.toISOString());
+        const startDate = new Date(start);
+        startDate.setHours(0, 0, 0, 0); // Início do dia
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999); // Fim do dia
+
+        queryAtivas = queryAtivas.gte('data', startDate.toISOString()).lte('data', endDate.toISOString());
+        queryFechadas = queryFechadas.gte('data', startDate.toISOString()).lte('data', endDate.toISOString());
       }
 
       const { data: ativas, error: errorAtivas } = await queryAtivas;
@@ -120,11 +125,36 @@ export function RelatorioVendas() {
     if (!vendaToDelete) return;
 
     try {
-      const { error } = await supabase.from(vendaToDelete.tabela).delete().eq('id', vendaToDelete.id);
-      if (error) throw error;
+      // Primeiro, excluir os itens vendidos
+      const { data: itensVendidos, error: itemError } = await supabase
+        .from('itens_vendidos')
+        .select('*')
+        .eq('venda_id', vendaToDelete.id);
+
+      if (itemError) throw itemError;
+
+      // Excluir cada item vendido
+      for (const item of itensVendidos) {
+        const { error: deleteItemError } = await supabase
+          .from('itens_vendidos')
+          .delete()
+          .eq('id', item.id);
+
+        if (deleteItemError) throw deleteItemError;
+      }
+
+      // Em seguida, excluir a venda
+      const { error: vendaError } = await supabase.from(vendaToDelete.tabela).delete().eq('id', vendaToDelete.id);
+      if (vendaError) throw vendaError;
+
+      // Remover a venda da lista de vendas ativas ou fechadas
+      if (vendaToDelete.tabela === 'vendas') {
+        setVendasAtivas((prevVendas) => prevVendas.filter((venda) => venda.id !== vendaToDelete.id));
+      } else {
+        setVendasFechadas((prevVendas) => prevVendas.filter((venda) => venda.id !== vendaToDelete.id));
+      }
 
       toast.success('Venda excluída com sucesso!');
-      carregarVendas();
     } catch (error) {
       console.error('Erro ao excluir venda:', error);
       toast.error('Erro ao excluir venda');

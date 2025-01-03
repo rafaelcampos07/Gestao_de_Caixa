@@ -10,7 +10,8 @@ export function PDV() {
   const [carrinho, setCarrinho] = useState<ItemVenda[]>([]);
   const [busca, setBusca] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Venda['forma_pagamento']>('dinheiro');
-  const [desconto, setDesconto] = useState<number | null>(null);
+  const [descontoPorcentagem, setDescontoPorcentagem] = useState<string>(''); // Alterado para string
+  const [descontoDinheiro, setDescontoDinheiro] = useState<string>(''); // Alterado para string
   const [valorRecebido, setValorRecebido] = useState<number | null>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<string>('');
@@ -63,6 +64,16 @@ export function PDV() {
 
   const adicionarAoCarrinho = (produto: Produto, quantidade: number = 1) => {
     const item = carrinho.find(i => i.produto.id === produto.id);
+
+    // Verifica se há estoque suficiente apenas para produtos não avulsos
+    if (!produto.avulso) {
+      const quantidadeDisponivel = item ? produto.estoque - item.quantidade : produto.estoque;
+      if (quantidade > quantidadeDisponivel) {
+        toast.error(`Quantidade indisponível. Disponível no estoque: ${quantidadeDisponivel}`);
+        return;
+      }
+    }
+
     if (item) {
       setCarrinho(carrinho.map(i => 
         i.produto.id === produto.id
@@ -79,7 +90,20 @@ export function PDV() {
   };
 
   const total = carrinho.reduce((acc, item) => acc + item.subtotal, 0);
-  const totalComDesconto = desconto ? total - (total * desconto) / 100 : total;
+
+  const handleDescontoPorcentagemChange = (value: string) => {
+    setDescontoPorcentagem(value);
+    const porcentagem = value ? parseFloat(value) : null;
+    setDescontoDinheiro(porcentagem ? ((total * porcentagem) / 100).toFixed(2) : '');
+  };
+
+  const handleDescontoDinheiroChange = (value: string) => {
+    setDescontoDinheiro(value);
+    const dinheiro = value ? parseFloat(value) : null;
+    setDescontoPorcentagem(dinheiro ? ((dinheiro / total) * 100).toFixed(2) : '');
+  };
+
+  const totalComDesconto = descontoDinheiro ? total - parseFloat(descontoDinheiro) : (descontoPorcentagem ? total - (total * parseFloat(descontoPorcentagem)) / 100 : total);
   const troco = valorRecebido !== null ? valorRecebido - totalComDesconto : 0;
 
   const finalizarVenda = async () => {
@@ -103,24 +127,55 @@ export function PDV() {
 
       const venda = {
         items: carrinho,
-        total: totalComDesconto,
+        total: totalComDesconto, // Total com desconto aplicado
         forma_pagamento: formaPagamento,
-        desconto: desconto || 0,
+        desconto_dinheiro: descontoDinheiro ? parseFloat(descontoDinheiro) : 0, // Valor do desconto em reais
+        desconto_porcentagem: descontoPorcentagem ? parseFloat(descontoPorcentagem) : 0, // Valor do desconto em porcentagem
         data: new Date(),
         finalizada: true,
         user_id: user.id,
         funcionario_id: funcionarioSelecionado
       };
 
-      const { error } = await supabase.from('vendas').insert([venda]);
-      if (error) throw error;
+      // Inserir venda
+      const { error: vendaError } = await supabase.from('vendas').insert([venda]);
+      if (vendaError) throw vendaError;
+
+      // Atualizar estoque para cada item vendido
+      for (const item of carrinho) {
+        if (!item.produto.avulso) {
+          // Obtém o estoque atual do produto do banco de dados
+          const { data: produtoAtualizado, error: produtoError } = await supabase
+            .from('produtos')
+            .select('estoque')
+            .eq('id', item.produto.id)
+            .single();
+
+          if (produtoError) throw produtoError;
+
+          // Calcula o novo estoque
+          const novoEstoque = produtoAtualizado.estoque - item.quantidade;
+
+          // Atualiza o estoque no banco de dados
+          const { error: updateError } = await supabase
+            .from('produtos')
+            .update({ estoque: novoEstoque })
+            .eq('id', item.produto.id);
+
+          if (updateError) throw updateError;
+        }
+      }
 
       toast.success('Venda finalizada com sucesso!');
       setCarrinho([]);
-      setDesconto(null);
+      setDescontoPorcentagem('');
+      setDescontoDinheiro('');
       setFormaPagamento('dinheiro');
       setFuncionarioSelecionado('');
       setValorRecebido(null);
+
+      // Recarregar produtos para atualizar o estoque
+      carregarProdutos();
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
       toast.error('Erro ao finalizar venda');
@@ -197,7 +252,8 @@ export function PDV() {
                     preco: novoProduto.preco,
                     descricao: '',
                     codigo: '',
-                    estoque: 0
+                    estoque: 0,
+                    avulso: true // Identifica o produto como avulso
                   };
                   adicionarAoCarrinho(produtoAvulso, novoProduto.quantidade);
                   setNovoProduto({ nome: '', preco: null, quantidade: 1 });
@@ -223,6 +279,9 @@ export function PDV() {
                 <div className="font-medium text-gray-900">{produto.nome}</div>
                 <div className="text-indigo-600 font-medium">
                   R$ {produto.preco.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Estoque: {produto.estoque}
                 </div>
               </button>
             ))}
@@ -271,14 +330,24 @@ export function PDV() {
             <option value="credito">Cartão de Crédito</option>
           </select>
 
-          <input
-            type="number"
-            step="0.01"
-            value={desconto ?? ''}
-            onChange={(e) => setDesconto(e.target.value ? parseFloat(e.target.value) : null)}
-            placeholder="Desconto (%)"
-            className="input-field"
-          />
+          <div className="flex gap-2">
+            <input
+              type="number"
+              step="0.01"
+              value={descontoPorcentagem}
+              onChange={(e) => handleDescontoPorcentagemChange(e.target.value)}
+              placeholder="Desconto (%)"
+              className="input-field"
+            />
+            <input
+              type="number"
+              step="0.01"
+              value={descontoDinheiro}
+              onChange={(e) => handleDescontoDinheiroChange(e.target.value)}
+              placeholder="Desconto (R$)"
+              className="input-field"
+            />
+          </div>
 
           {formaPagamento === 'dinheiro' && (
             <input

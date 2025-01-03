@@ -143,13 +143,5 @@
 .menu-item:hover {
   background-color: #e0e0e0;
 
-  /* index.css */
-
-/* Adicione esta regra para alinhar as abas à esquerda */
-.tabs-left {
-  display: flex;
-  justify-content: flex-start;
-}
-
-  
+ 
 }

@@ -1,0 +1,100 @@
+/* Container centralizado e com largura máxima definida */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%; /* Garantir que ocupe 100% da largura disponível */
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.input-field {
+  flex: 1 1 calc(100% - 20px); /* Flex-grow, flex-shrink, flex-basis */
+  min-width: 150px;
+  padding: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.input-field-half {
+  flex: 1 1 calc(50% - 10px); /* Half-width for smaller inputs */
+}
+
+.input-field-full {
+  flex: 1 1 100%; /* Full width for textarea */
+}
+
+.btn-primary,
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.btn-primary {
+  background-color: #4f46e5; /* Indigo */
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #e5e7eb; /* Gray */
+  color: #1f2937; /* Gray-800 */
+}
+
+.btn-primary svg,
+.btn-secondary svg {
+  margin-right: 5px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Media queries para responsividade */
+@media (min-width: 640px) {
+  .input-field {
+    flex: 1 1 calc(50% - 10px); /* Flex-grow, flex-shrink, flex-basis */
+  }
+
+  .input-field-full {
+    flex: 1 1 100%;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .table-responsive {
+    overflow-x: auto;
+  }
+}

@@ -41,18 +41,54 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
     if (vendaParaExcluir) {
       try {
         const tabela = tipoTabela === 'ativas' ? 'vendas' : 'caixas_fechados';
-        const { error } = await supabase.from(tabela).delete().eq('id', vendaParaExcluir.id);
-        if (error) {
-          console.error('Erro ao excluir venda:', error);
-          toast.error('Erro ao excluir venda');
-          return;
+
+        // Atualizar o estoque dos produtos antes de excluir a venda
+        for (const item of vendaParaExcluir.items) {
+          if (!item.produto.avulso) {
+            const { data: produtoAtualizado, error: produtoError } = await supabase
+              .from('produtos')
+              .select('estoque')
+              .eq('id', item.produto.id)
+              .single();
+
+            if (produtoError) {
+              console.error('Erro ao atualizar estoque:', produtoError);
+              throw produtoError;
+            }
+
+            const novoEstoque = produtoAtualizado.estoque + item.quantidade;
+
+            const { error: updateError } = await supabase
+              .from('produtos')
+              .update({ estoque: novoEstoque })
+              .eq('id', item.produto.id);
+
+            if (updateError) {
+              console.error('Erro ao atualizar estoque:', updateError);
+              throw updateError;
+            }
+          }
+        }
+
+        // Excluir a venda
+        const { error: vendaError } = await supabase.from(tabela).delete().eq('id', vendaParaExcluir.id);
+        if (vendaError) {
+          console.error('Erro ao excluir venda:', vendaError);
+          throw vendaError;
         }
 
         toast.success('Venda excluída com sucesso!');
         // Atualizar a lista de vendas após a exclusão
         const novasVendas = vendas.filter((venda) => venda.id !== vendaParaExcluir.id);
-        //setVendas(novasVendas);
-     
+        // Atualiza o estado das vendas
+        if (tipoTabela === 'ativas') {
+          setVendasAtivas(novasVendas);
+        } else {
+          setVendasFechadas(novasVendas);
+        }
+      } catch (error) {
+        console.error('Erro ao excluir venda:', error);
+        //toast.error('Erro ao excluir venda');
       } finally {
         setShowConfirmDeleteModal(false);
         setVendaParaExcluir(null);
@@ -79,6 +115,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
             <th className="px-4 py-2 text-center border-b">Funcionário</th>
             <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
             <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
+            <th className="px-4 py-2 text-center border-b">Desconto (R$)</th>
             <th className="px-4 py-2 text-center border-b">Total da Venda</th>
             <th className="px-4 py-2 text-center border-b">Forma de Pagamento</th>
             <th className="px-4 py-2 text-center border-b">Ações</th>
@@ -87,7 +124,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
         <tbody>
           {vendas.length === 0 ? (
             <tr>
-              <td className="border px-4 py-2 text-center" colSpan={7}>Nenhuma venda encontrada</td>
+              <td className="border px-4 py-2 text-center" colSpan={8}>Nenhuma venda encontrada</td>
             </tr>
           ) : (
             vendas.map((venda) => (
@@ -95,7 +132,8 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
                 <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
                 <td className="border px-4 py-2 text-center">{getFuncionarioNome(venda.funcionario_id)}</td>
                 <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
-                <td className="border px-4 py-2 text-center">{venda.desconto}%</td>
+                <td className="border px-4 py-2 text-center">{(venda.desconto_porcentagem ?? 0).toFixed(2)}%</td>
+                <td className="border px-4 py-2 text-center">R$ {(venda.desconto_dinheiro ?? 0).toFixed(2)}</td>
                 <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>
                 <td className="border px-4 py-2 text-center">{venda.forma_pagamento}</td>
                 <td className="border px-4 py-2 text-center">
