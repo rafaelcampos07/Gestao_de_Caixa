@@ -4,23 +4,23 @@ import { supabase } from '../lib/supabase';
 import { Plus, Edit2, Trash2, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import CadastroFuncionarioModal from './CadastroFuncionarioModal';
-import type { Funcionario } from '../types';
+import CadastroFornecedorModal from './CadastroFornecedorModal'; // Modal para cadastro de fornecedor
+import type { Fornecedor } from '../types'; // Importação corrigida
 
-export function CadastroFuncionario() {
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+export function CadastroFornecedor() {
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentFuncionarioId, setCurrentFuncionarioId] = useState<string | null>(null);
-  const [editingFuncionario, setEditingFuncionario] = useState<Partial<Funcionario> | null>(null);
+  const [currentFornecedorId, setCurrentFornecedorId] = useState<string | null>(null);
+  const [editingFornecedor, setEditingFornecedor] = useState<Partial<Fornecedor> | null>(null);
   const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    carregarFuncionarios();
+    carregarFornecedores();
   }, []);
 
-  const carregarFuncionarios = async () => {
+  const carregarFornecedores = async () => {
     setLoading(true);
     const { data: { user }, error: userError } = await supabase.auth.getUser ();
     if (userError || !user) {
@@ -30,104 +30,104 @@ export function CadastroFuncionario() {
     }
 
     const { data, error } = await supabase
-      .from('funcionarios')
+      .from('fornecedores')
       .select('*')
-      .eq('user_id', user.id); // Filtra os funcionários pelo user_id
+      .eq('user_id', user.id); // Filtra os fornecedores pelo user_id
 
     if (error) {
-      toast.error('Erro ao carregar funcionários');
+      toast.error('Erro ao carregar fornecedores');
       setLoading(false);
       return;
     }
-    if (data) setFuncionarios(data);
+    if (data) setFornecedores(data);
     setLoading(false);
   };
 
-  const handleEdit = (func: Funcionario) => {
-    setEditingFuncionario({
-      nome: func.nome,
-      celular: func.celular || '',
-      email: func.email || '',
-      funcao: func.funcao || '',
+  const handleEdit = (fornecedor: Fornecedor) => {
+    setEditingFornecedor({
+      nome: fornecedor.nome,
+      telefone: fornecedor.telefone || '',
+      email: fornecedor.email || '',
+      endereco: fornecedor.endereco || '',
     });
-    setCurrentFuncionarioId(func.id);
+    setCurrentFornecedorId(fornecedor.id);
     setModalAction('edit');
     setIsModalOpen(true);
   };
 
   const openDeleteModal = (id: string) => {
-    setCurrentFuncionarioId(id);
+    setCurrentFornecedorId(id);
     setModalAction('delete');
     setIsModalOpen(true);
   };
 
   const handleDelete = async () => {
-    if (currentFuncionarioId) {
+    if (currentFornecedorId) {
       try {
-        const { error } = await supabase.from('funcionarios').delete().eq('id', currentFuncionarioId);
+        const { error } = await supabase.from('fornecedores').delete().eq('id', currentFornecedorId);
         if (error) throw error;
-        toast.success('Funcionário excluído com sucesso!');
-        carregarFuncionarios();
+        toast.success('Fornecedor excluído com sucesso!');
+        carregarFornecedores();
       } catch (error) {
-        toast.error('Erro ao excluir funcionário');
+        toast.error('Erro ao excluir fornecedor');
       } finally {
         setIsModalOpen(false);
-        setCurrentFuncionarioId(null);
+        setCurrentFornecedorId(null);
         setModalAction(null);
       }
     }
   };
 
   const openCreateModal = () => {
-    setEditingFuncionario({
+    setEditingFornecedor({
       nome: '',
-      celular: '',
+      telefone: '',
       email: '',
-      funcao: '',
+      endereco: '',
     });
-    setCurrentFuncionarioId(null);
+    setCurrentFornecedorId(null);
     setModalAction('create');
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setCurrentFuncionarioId(null);
-    setEditingFuncionario(null);
+    setCurrentFornecedorId(null);
+    setEditingFornecedor(null);
     setModalAction(null);
   };
 
-  const filteredFuncionarios = funcionarios.filter((func) =>
-    func.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFornecedores = fornecedores.filter((fornecedor) =>
+    fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="container mx-auto mt-5 p-5">
       <h1 className="text-3xl font-bold text-center mb-6 flex items-center justify-center gap-2">
         <User  size={40} className="text-indigo-600" />
-        Cadastro de Funcionário
+        Cadastro de Fornecedor
       </h1>
 
       {loading ? (
         <div className="d-flex justify-content-center">
-          <Spinner animation="border" role="status" style={{ width: '3rem', height: '3rem' }}>
-            <span className="sr-only">Loading...</span>
+          <Spinner animation="border" role="status" style={{ width: '3rem', height : '3rem' }}>
+            <span className="visually-hidden">Loading...</span>
           </Spinner>
         </div>
       ) : (
         <>
           <div className="d-flex justify-content-center mb-4">
-            < Button variant="primary" onClick={openCreateModal}>
+            <Button variant="primary" onClick={openCreateModal}>
               <Plus size={20} />
-              Cadastrar Novo Funcionário
+              Cadastrar Novo Fornecedor
             </Button>
           </div>
 
-          <h2 className="text-2xl font-bold mt-8 mb-4 text-center">Funcionários Cadastrados</h2>
+          <h2 className="text-2xl font-bold mt-8 mb-4 text-center">Fornecedores Cadastrados</h2>
           <div className="d-flex justify-content-center mb-4">
             <InputGroup className="mb-3">
-              <FormControl placeholder="Buscar funcionário"
-                aria-label="Buscar funcionário"
+              <FormControl placeholder="Buscar fornecedor"
+                aria-label="Buscar fornecedor"
                 aria-describedby="basic-addon2"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -135,30 +135,30 @@ export function CadastroFuncionario() {
             </InputGroup>
           </div>
 
-          {filteredFuncionarios.length > 0 ? (
+          {filteredFornecedores.length > 0 ? (
             <div className="card p-3">
               <Table responsive striped bordered hover className="table-sm">
                 <thead className="bg-indigo-600 text-white text-center">
                   <tr>
                     <th>Nome</th>
-                    <th>Celular</th>
+                    <th>Telefone</th>
                     <th>Email</th>
-                    <th>Função</th>
+                    <th>Endereço</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredFuncionarios.map((func) => (
-                    <tr key={func.id}>
-                      <td className="align-middle">{func.nome}</td>
-                      <td className="align-middle">{func.celular}</td>
-                      <td className="align-middle">{func.email}</td>
-                      <td className="align-middle">{func.funcao}</td>
+                  {filteredFornecedores.map((fornecedor) => (
+                    <tr key={fornecedor.id}>
+                      <td className="align-middle">{fornecedor.nome}</td>
+                      <td className="align-middle">{fornecedor.telefone}</td>
+                      <td className="align-middle">{fornecedor.email}</td>
+                      <td className="align-middle">{fornecedor.endereco}</td>
                       <td className="align-middle text-center">
-                        <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(func)}>
+                        <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(fornecedor)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(func.id)}>
+                        <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(fornecedor.id)}>
                           <Trash2 size={16} />
                         </Button>
                       </td>
@@ -168,7 +168,7 @@ export function CadastroFuncionario() {
               </Table>
             </div>
           ) : (
-            <div className="text-center text-gray-500">Nenhum funcionário encontrado</div>
+            <div className="text-center text-gray-500">Nenhum fornecedor encontrado</div>
           )}
         </>
       )}
@@ -177,14 +177,14 @@ export function CadastroFuncionario() {
         show={modalAction === 'delete' && isModalOpen}
         handleClose={closeModal}
         handleConfirm={handleDelete}
-        message="Tem certeza que deseja excluir este funcionário?"
+        message="Tem certeza que deseja excluir este fornecedor?"
       />
-      <CadastroFuncionarioModal
+      <CadastroFornecedorModal
         show={modalAction === 'create' || modalAction === 'edit'}
         handleClose={closeModal}
-        carregarFuncionarios={carregarFuncionarios}
-        funcionarioInicial={editingFuncionario || { nome: '', celular: '', email: '', funcao: '' }}
-        editingId={currentFuncionarioId}
+        carregarFornecedores={carregarFornecedores}
+        fornecedorInicial={editingFornecedor || { nome: '', telefone: '', email: '', endereco: '' }}
+        editingId={currentFornecedorId}
       />
     </div>
   );

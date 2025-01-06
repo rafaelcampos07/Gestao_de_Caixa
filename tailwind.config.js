@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    './index.html', // Inclui o arquivo HTML principal
+    './src/**/*.{js,ts,jsx,tsx}', // Inclui todos os arquivos JS, TS, JSX e TSX dentro da pasta src
+    './src/components/**/*.{js,ts,jsx,tsx}', // Inclui todos os arquivos JS, TS, JSX e TSX dentro da pasta components
+  ],
   theme: {
     extend: {
       fontFamily: {

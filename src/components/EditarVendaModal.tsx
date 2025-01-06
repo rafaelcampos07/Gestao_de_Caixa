@@ -19,7 +19,7 @@ interface Produto {
   codigo: string;
   estoque: number;
   descricao: string;
-  avulso?: boolean; // Adiciona a flag avulso
+  avulso?: boolean;
 }
 
 interface Item {
@@ -32,8 +32,8 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
   const [formData, setFormData] = useState<Venda | null>(null);
   const [total, setTotal] = useState<number>(0);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
-  const [descontoPorcentagem, setDescontoPorcentagem] = useState<string>(''); // Alterado para string
-  const [descontoDinheiro, setDescontoDinheiro] = useState<string>(''); // Alterado para string
+  const [descontoPorcentagem, setDescontoPorcentagem] = useState<string>('');
+  const [descontoDinheiro, setDescontoDinheiro] = useState<string>('');
 
   useEffect(() => {
     if (venda) {
@@ -41,7 +41,7 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       setFormData({ ...venda, items, data: formatDateTime(venda.data) });
       setDescontoPorcentagem(venda.desconto_porcentagem ? venda.desconto_porcentagem.toFixed(2) : '');
       setDescontoDinheiro(venda.desconto_dinheiro ? venda.desconto_dinheiro.toFixed(2) : '');
-      calculateTotal(items, venda.desconto_dinheiro ?? 0, venda.desconto_porcentagem ?? 0);
+      calculateTotal(items);
     } else {
       setFormData(null);
     }
@@ -87,7 +87,6 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       const produto = newItems[index].produto;
 
       if (!produto.avulso) {
-        // Verificar o estoque atualizado do produto, exceto para produtos avulsos
         const produtoId = produto.id;
         const { data: produtoAtualizado, error: produtoError } = await supabase
           .from('produtos')
@@ -117,8 +116,9 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
           toast.error(`Quantidade indisponível. Estoque atual: ${produtoAtualizado.estoque}`);
           return;
         }
+
+        newItems[index].produto.estoque = produtoAtualizado.estoque;
       } else {
-        // Para produtos avulsos, permitir a edição sem restrições
         if (subField) {
           newItems[index] = {
             ...newItems[index],
@@ -132,38 +132,18 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
         }
       }
 
-      setFormData({ ...formData, items: newItems });
-      calculateTotal(newItems, parseFloat(descontoDinheiro), parseFloat(descontoPorcentagem));
-    }
-  };
+      // Atualiza o subtotal do item
+      newItems[index].subtotal = newItems[index].produto.preco * newItems[index].quantidade;
 
-  const handleAddItem = () => {
-    if (formData) {
-      const newItems = [
-        ...formData.items,
-        {
-          produto: { id: "", nome: "", preco: 0, codigo: "", estoque: 0, descricao: "", avulso: false },
-          subtotal: 0,
-          quantidade: 0,
-        },
-      ];
       setFormData({ ...formData, items: newItems });
-      calculateTotal(newItems, parseFloat(descontoDinheiro), parseFloat(descontoPorcentagem));
-    }
-  };
-
-  const handleRemoveItem = (index: number) => {
-    if (formData) {
-      const newItems = formData.items.filter((_, i) => i !== index);
-      setFormData({ ...formData, items: newItems });
-      calculateTotal(newItems, parseFloat(descontoDinheiro), parseFloat(descontoPorcentagem));
+      calculateTotal(newItems);
     }
   };
 
   const handleDescontoPorcentagemChange = (value: string) => {
     setDescontoPorcentagem(value);
     const porcentagem = value ? parseFloat(value) : 0;
-    const subtotal = formData?.items.reduce((acc, item) => acc + item.produto.preco * item.quantidade, 0) || 0;
+    const subtotal = formData?.items.reduce((acc, item) => acc + item.subtotal, 0) || 0;
     const descontoDinheiroCalculado = ((subtotal * porcentagem) / 100).toFixed(2);
     setDescontoDinheiro(descontoDinheiroCalculado);
     calculateTotal(formData?.items ?? [], parseFloat(descontoDinheiroCalculado), porcentagem);
@@ -172,27 +152,43 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
   const handleDescontoDinheiroChange = (value: string) => {
     setDescontoDinheiro(value);
     const dinheiro = value ? parseFloat(value) : 0;
-    const subtotal = formData?.items.reduce((acc, item) => acc + item.produto.preco * item.quantidade, 0) || 0;
+    const subtotal = formData?.items.reduce((acc, item) => acc + item.subtotal, 0) || 0;
     const descontoPorcentagemCalculado = ((dinheiro / subtotal) * 100).toFixed(2);
     setDescontoPorcentagem(descontoPorcentagemCalculado);
     calculateTotal(formData?.items ?? [], dinheiro, parseFloat(descontoPorcentagemCalculado));
   };
 
-  const calculateTotal = (items: Item[], descontoDinheiro: number, descontoPorcentagem: number) => {
-    const subtotal = items.reduce((acc, item) => acc + item.produto.preco * item.quantidade, 0);
+  const calculateTotal = (items: Item[], descontoDinheiro: number = 0, descontoPorcentagem: number = 0) => {
+    const subtotal = items.reduce((acc, item) => acc + item.subtotal, 0);
     const totalComPorcentagem = subtotal - (subtotal * (descontoPorcentagem / 100));
     const total = totalComPorcentagem - descontoDinheiro;
-    setTotal(total);
+
+    // Ensure total is a valid number
+    setTotal(isNaN(total) ? 0 : total);
+  };
+
+  const validateFormData = () => {
+    if (!formData) return false;
+    if (!formData.data || !formData.funcionario_id || !formData.forma_pagamento) return false;
+    if (formData.items.length === 0) return false;
+
+    for (const item of formData.items) {
+      if (!item.produto.nome || item.produto.preco <= 0 || item.quantidade <= 0) return false;
+    }
+
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData) return;
+    if (!validateFormData()) {
+      toast.error("Preencha todos os campos corretamente antes de salvar.");
+      return;
+    }
 
     const tabela = tipoTabela === 'ativas' ? 'vendas' : 'caixas_fechados';
 
     try {
-      // Atualizar o estoque dos produtos antes de salvar a venda editada, exceto para produtos avulsos
       for (const item of venda.items) {
         if (!item.produto.avulso) {
           const quantidadeEditada = formData.items.find(i => i.produto.id === item.produto.id)?.quantidade || 0;
@@ -216,14 +212,22 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
         }
       }
 
+      const descontoDinheiroValue = descontoDinheiro ? parseFloat(descontoDinheiro) : 0;
+      const descontoPorcentagemValue = descontoPorcentagem ? parseFloat(descontoPorcentagem) : 0;
+
+      // Log the total and items before saving
+      console.log("Total calculado antes de salvar:", total);
+      console.log("Items antes de salvar:", formData.items);
+
       const { data, error } = await supabase
         .from(tabela)
         .update({
           ...formData,
-          data: new Date(formData.data).toISOString(), // Ensure the date is in ISO format
-          total,
-          desconto_dinheiro: parseFloat(descontoDinheiro), // Atualizar o valor do desconto em dinheiro
-          desconto_porcentagem: parseFloat(descontoPorcentagem), // Atualizar o valor do desconto em porcentagem
+          data: new Date(formData.data).toISOString(),
+          total: total, // Ensure total is being passed correctly
+          items: formData.items, // Ensure items are being passed correctly
+          desconto_dinheiro: descontoDinheiroValue,
+          desconto_porcentagem: descontoPorcentagemValue,
         })
         .eq("id", formData.id)
         .select();
@@ -235,7 +239,7 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       }
 
       toast.success("Venda atualizada com sucesso!");
-      atualizarVenda(); // Chama a função para atualizar a lista de vendas
+      atualizarVenda();
       handleClose();
     } catch (error: any) {
       console.error("Erro ao atualizar venda:", error.message);
@@ -341,6 +345,7 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
                     value={item.produto.nome}
                     onChange={(e) => handleItemChange(index, "produto.nome", e.target.value)}
                     required
+                    disabled={!item.produto.avulso} // Disable the name field if the product is not avulso
                   />
                 </Col>
                 <Col md={2}>
@@ -359,7 +364,6 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
                     value={item.quantidade ?? ""}
                     onChange={(e) => handleItemChange(index, "quantidade", parseInt(e.target.value, 10))}
                     required
-                    // Atualizar o valor máximo permitido para a quantidade, exceto para produtos avulsos
                     max={item.produto.avulso ? undefined : item.produto.estoque + venda.items[index].quantidade}
                   />
                 </Col>
@@ -367,20 +371,12 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
                   <Form.Control
                     type="number"
                     placeholder="Subtotal"
-                    value={(item.produto.preco * item.quantidade).toFixed(2)}
+                    value={item.subtotal.toFixed(2)}
                     readOnly
                   />
                 </Col>
-                <Col md={1}>
-                  <Button variant="danger" onClick={() => handleRemoveItem(index)}>
-                    Remover
-                  </Button>
-                </Col>
               </Row>
             ))}
-            <Button variant="secondary" onClick={handleAddItem}>
-              Adicionar Item
-            </Button>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>

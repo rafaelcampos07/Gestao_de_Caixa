@@ -7,26 +7,27 @@ import { CadastroProduto } from './components/CadastroProduto';
 import { PDV } from './components/PDV';
 import { RelatorioVendas } from './components/RelatorioVendas';
 import { CadastroFuncionario } from './components/CadastroFuncionario';
+import { CadastroFornecedor } from './components/CadastroFornecedor'; // Importando o novo componente
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import Watermark from './components/Watermark';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
-import { Package, ShoppingCart, BarChart, Users } from 'lucide-react';
+import { Package, ShoppingCart, ShoppingBag, Users } from 'lucide-react';
 import { AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Tabs, Tab, useMediaQuery, Typography, Divider, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useTheme } from '@mui/material/styles';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '@fortawesome/fontawesome-free/css/all.min.css'; // Certifique-se de importar o FontAwesome aqui
-import './index.css'; // Certifique-se de importar seu CSS personalizado
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import './index.css';
 
 function App() {
   const [session, setSession] = useState(null);
-  const [tab, setTab] = useState('pdv'); // Definindo a aba principal como "PDV"
+  const [tab, setTab] = useState('pdv');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [logoutModalOpen, setLogoutModalOpen] = useState(false); // Novo estado para controle do modal de logout
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -52,12 +53,12 @@ function App() {
     } else {
       setSession(null);
       toast.success('Desconectado com sucesso');
-      setLogoutModalOpen(false); // Fechar o modal de logout após sair
+      setLogoutModalOpen(false);
     }
   };
 
   const handleCloseLogoutModal = () => {
-    setLogoutModalOpen(false); // Fechar o modal de logout quando cancelar
+    setLogoutModalOpen(false);
   };
 
   const handleDelete = async () => {
@@ -66,10 +67,9 @@ function App() {
         const { error } = await supabase.from('produtos').delete().eq('id', currentProductId);
         if (error) throw error;
         toast.success('Produto excluído com sucesso!');
-        // Recarregar produtos após exclusão
         if (tab === 'produtos') {
-          setTab('pdv'); // Temporariamente mudar de aba para forçar recarregamento
-          setTimeout(() => setTab('produtos'), 0); // Voltar para a aba de produtos
+          setTab('pdv');
+          setTimeout(() => setTab('produtos'), 0);
         }
       } catch (error) {
         toast.error('Erro ao excluir produto');
@@ -105,6 +105,10 @@ function App() {
           <ListItemIcon><Package /></ListItemIcon>
           <ListItemText primary="Produtos" />
         </ListItem>
+        <ListItem button onClick={() => setTab('fornecedores')}>
+          <ListItemIcon><ShoppingBag /></ListItemIcon>
+          <ListItemText primary="Fornecedores" />
+        </ListItem>
         <ListItem button onClick={() => setTab('funcionarios')}>
           <ListItemIcon><Users /></ListItemIcon>
           <ListItemText primary="Funcionários" />
@@ -113,9 +117,9 @@ function App() {
           <ListItemIcon><ShoppingCart /></ListItemIcon>
           <ListItemText primary="PDV" />
         </ListItem>
-        <ListItem button onClick={() => setTab('relatorio')}>
-          <ListItemIcon><BarChart /></ListItemIcon>
-          <ListItemText primary="Relatório" />
+        <ListItem button onClick={() => setTab('vendas')}>
+          <ListItemIcon><ShoppingBag /></ListItemIcon>
+          <ListItemText primary="Vendas" />
         </ListItem>
       </List>
     </div>
@@ -192,9 +196,10 @@ function App() {
             <Toolbar>
               <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)} textColor="inherit" indicatorColor="secondary" className="tabs-left">
                 <Tab value="produtos" label="Produtos" icon={<Package />} iconPosition="start" />
+                <Tab value="fornecedores" label="Fornecedores" icon={<ShoppingBag />} iconPosition="start" /> {/* Nova aba "Fornecedores" */}
                 <Tab value="funcionarios" label="Funcionários" icon={<Users />} iconPosition="start" />
                 <Tab value="pdv" label="PDV" icon={<ShoppingCart />} iconPosition="start" />
-                <Tab value="relatorio" label="Relatório" icon={<BarChart />} iconPosition="start" />
+                <Tab value="vendas" label="Vendas" icon={<ShoppingBag />} iconPosition="start" />
               </Tabs>
               {session && session.user && (
                 <>
@@ -215,8 +220,9 @@ function App() {
             <Route path="/" element={
               <>
                 {tab === 'produtos' && <CadastroProduto openModal={openModal} />}
+                {tab === 'fornecedores' && <CadastroFornecedor />} {/* Renderizando o novo componente */}
                 {tab === 'pdv' && <PDV />}
-                {tab === 'relatorio' && <RelatorioVendas />}
+                {tab === 'vendas' && <RelatorioVendas />}
                 {tab === 'funcionarios' && <CadastroFuncionario />}
               </>
             } />
@@ -233,7 +239,6 @@ function App() {
           message="Tem certeza que deseja excluir este produto?"
         />
 
-        {/* Modal de confirmação para logout */}
         <ConfirmDeleteModal
           show={logoutModalOpen}
           handleClose={handleCloseLogoutModal}

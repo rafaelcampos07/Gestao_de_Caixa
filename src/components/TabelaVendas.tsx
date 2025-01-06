@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import EditarVendaModal from './EditarVendaModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import type { Venda, Funcionario } from '../types';
+import { Button } from 'react-bootstrap'; // Importando o botão do Bootstrap
 
 interface TabelaVendasProps {
   vendas: Venda[];
@@ -78,17 +79,8 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
         }
 
         toast.success('Venda excluída com sucesso!');
-        // Atualizar a lista de vendas após a exclusão
-        const novasVendas = vendas.filter((venda) => venda.id !== vendaParaExcluir.id);
-        // Atualiza o estado das vendas
-        if (tipoTabela === 'ativas') {
-          setVendasAtivas(novasVendas);
-        } else {
-          setVendasFechadas(novasVendas);
-        }
       } catch (error) {
         console.error('Erro ao excluir venda:', error);
-        //toast.error('Erro ao excluir venda');
       } finally {
         setShowConfirmDeleteModal(false);
         setVendaParaExcluir(null);
@@ -108,11 +100,11 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-300">
-        <thead className="bg-gray-100">
+      <table className="min-w-full bg-white border border-gray-300 shadow-lg rounded-lg">
+        <thead style={{ backgroundColor: '#4f46e5', color: 'white' }}>
           <tr>
             <th className="px-4 py-2 text-center border-b">Data e Hora</th>
-            <th className="px-4 py-2 text-center border-b">Funcionário</th>
+            <th class Name="px-4 py-2 text-center border-b">Funcionário</th>
             <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
             <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
             <th className="px-4 py-2 text-center border-b">Desconto (R$)</th>
@@ -128,7 +120,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
             </tr>
           ) : (
             vendas.map((venda) => (
-              <tr key={venda.id} className="hover:bg-gray-50">
+              <tr key={venda.id} className="hover:bg-gray-100 transition duration-200">
                 <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
                 <td className="border px-4 py-2 text-center">{getFuncionarioNome(venda.funcionario_id)}</td>
                 <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
@@ -136,13 +128,21 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
                 <td className="border px-4 py-2 text-center">R$ {(venda.desconto_dinheiro ?? 0).toFixed(2)}</td>
                 <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>
                 <td className="border px-4 py-2 text-center">{venda.forma_pagamento}</td>
-                <td className="border px-4 py-2 text-center">
-                  <button onClick={() => handleEditarVenda(venda)} className="text-blue-600 hover:text-blue-800 mr-2">
-                    <Edit3 size={20} />
-                  </button>
-                  <button onClick={() => handleExcluirVenda(venda)} className="text-red-600 hover:text-red-800">
-                    <Trash2 size={20} />
-                  </button>
+                <td className="border px-4 py-2 text-center flex justify-center">
+                  <Button
+                    variant="outline-primary"
+                    className="btn-sm mr-2"
+                    onClick={() => handleEditarVenda(venda)}
+                  >
+                    <Edit3 size={16} />
+                  </Button>
+                  <Button
+                    variant="outline-danger"
+                    className="btn-sm"
+                    onClick={() => handleExcluirVenda(venda)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
                 </td>
               </tr>
             ))

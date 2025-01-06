@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Table, FormControl, InputGroup } from 'react-bootstrap';
+import { Button, Table, FormControl, InputGroup, Spinner } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
 import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,18 +14,21 @@ export function CadastroProduto() {
   const [editingProduto, setEditingProduto] = useState<Partial<Produto> | null>(null);
   const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | null>(null);
   const [searchTerm, setSearchTerm] = useState(''); // Novo estado para o termo de busca
+  const [loading, setLoading] = useState(true); // Estado de loading
 
   useEffect(() => {
     carregarProdutos();
   }, []);
 
   const carregarProdutos = async () => {
+    setLoading(true); // Inicia o loading
     const { data, error } = await supabase.from('produtos').select('*');
     if (error) {
       toast.error('Erro ao carregar produtos');
       return;
     }
     if (data) setProdutos(data);
+    setLoading(false); // Finaliza o loading
   };
 
   const handleEdit = (prod: Produto) => {
@@ -97,62 +100,73 @@ export function CadastroProduto() {
         <Package size={40} className="text-indigo-600" />
         Cadastro de Produto
       </h1>
-      <div className="d-flex justify-content-center mb-4">
-        <Button variant="primary" onClick={openCreateModal}>
-          <Plus size={20} />
-          Cadastrar Novo Produto
-        </Button>
-      </div>
 
-      <h2 className="text-2xl font-bold mt-8 mb-4 text-center">Produtos Cadastrados</h2>
-      <div className="d-flex justify-content-center mb-4">
-        <InputGroup className="mb-3">
-          <FormControl
-            placeholder="Buscar produto"
-            aria-label="Buscar produto"
-            aria-describedby="basic-addon2"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </InputGroup>
-      </div>
-
-      {filteredProdutos.length > 0 ? (
-        <div className="card p-3">
-          <Table responsive striped bordered hover className="table-sm">
-            <thead className="bg-primary text-white text-center">
-              <tr>
-                <th>Nome</th>
-                <th>Preço</th>
-                <th>Preço de Custo</th> {/* Adicionar coluna "Preço de Custo" */}
-                <th>Código</th>
-                <th>Estoque</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProdutos.map((prod) => (
-                <tr key={prod.id}>
-                  <td className="align-middle">{prod.nome}</td>
-                  <td className="align-middle">R$ {parseFloat(prod.preco).toFixed(2)}</td>
-                  <td className="align-middle">R$ {prod.precoCusto ? parseFloat(prod.precoCusto).toFixed(2) : 'N/A'}</td> {/* Exibir "Preço de Custo" */}
-                  <td className="align-middle">{prod.codigo}</td>
-                  <td className="align-middle">{prod.estoque}</td>
-                  <td className="align-middle text-center">
-                    <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(prod)}>
-                      <Edit2 size={16} />
-                    </Button>
-                    <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(prod.id)}>
-                      <Trash2 size={16} />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+      {loading ? (
+        <div className="d-flex justify-content-center">
+          <Spinner animation="border" role="status" style={{ width: '3rem', height: '3rem' }}>
+            <span className="sr-only">Loading...</span>
+          </Spinner>
         </div>
       ) : (
-        <div className="text-center text-gray-500">Nenhum produto encontrado</div>
+        <>
+          <div className="d-flex justify-content-center mb-4">
+            <Button variant="primary" onClick={openCreateModal}>
+              <Plus size={20} />
+              Cadastrar Novo Produto
+            </Button>
+          </div>
+
+          <h2 className="text-2xl font-bold mt-8 mb-4 text-center">Produtos Cadastrados</h2>
+          <div className="d-flex justify-content-center mb-4">
+            <InputGroup className="mb-3">
+              <FormControl
+                placeholder="Buscar produto"
+                aria-label="Buscar produto"
+                aria-describedby="basic-addon2"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </InputGroup>
+          </div>
+
+          {filteredProdutos.length > 0 ? (
+            <div className="card p-3">
+              <Table responsive striped bordered hover className="table-sm">
+                <thead className="bg-primary text-white text-center">
+                  <tr>
+                    <th>Nome</th>
+                    <th>Preço</th>
+                    <th>Preço de Custo</th> {/* Adicionar coluna "Preço de Custo" */}
+                    <th>Código</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProdutos.map((prod) => (
+                    <tr key={prod.id}>
+                      <td className="align-middle">{prod.nome}</td>
+                      <td className="align-middle">R$ {parseFloat(prod.preco).toFixed(2)}</td>
+                      <td className="align-middle">R$ {prod.precoCusto ? parseFloat(prod.precoCusto).toFixed(2) : 'N/A'}</td> {/* Exibir "Preço de Custo" */}
+                      <td className="align-middle">{prod.codigo}</td>
+                      <td className="align-middle">{prod.estoque}</td>
+                      <td className="align-middle text-center">
+                        <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(prod)}>
+                          <Edit2 size={16} />
+                        </Button>
+                        <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(prod.id)}>
+                          <Trash2 size={16} />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500">Nenhum produto encontrado</div>
+          )}
+        </>
       )}
 
       <ConfirmDeleteModal
