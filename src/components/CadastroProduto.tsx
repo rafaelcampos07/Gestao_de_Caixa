@@ -5,40 +5,54 @@ import { Plus, Edit2, Trash2, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import CadastroProdutoModal from './CadastroProdutoModal';
-import type { Produto } from '../types';
+import type { Produto, Fornecedor } from '../types';
 
 export function CadastroProduto() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]); // Novo estado para fornecedores
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [editingProduto, setEditingProduto] = useState<Partial<Produto> | null>(null);
   const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | null>(null);
-  const [searchTerm, setSearchTerm] = useState(''); // Novo estado para o termo de busca
-  const [loading, setLoading] = useState(true); // Estado de loading
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    carregarFornecedores(); // Carregar fornecedores ao iniciar
     carregarProdutos();
   }, []);
 
+  const carregarFornecedores = async () => {
+    const { data, error } = await supabase.from('fornecedores').select('*');
+    if (error) {
+      toast.error('Erro ao carregar fornecedores');
+      return;
+    }
+    if (data) setFornecedores(data);
+  };
+
   const carregarProdutos = async () => {
-    setLoading(true); // Inicia o loading
-    const { data, error } = await supabase.from('produtos').select('*');
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('produtos')
+      .select('*, fornecedores(*)'); // Carregar produtos com dados do fornecedor
     if (error) {
       toast.error('Erro ao carregar produtos');
       return;
     }
     if (data) setProdutos(data);
-    setLoading(false); // Finaliza o loading
+    setLoading(false);
   };
 
   const handleEdit = (prod: Produto) => {
     setEditingProduto({
       nome: prod.nome,
       preco: prod.preco ? prod.preco.toString() : '',
-      precoCusto: prod.precoCusto ? prod.precoCusto.toString() : '', // Adicionar o campo "Preço de Custo"
+      precoCusto: prod.precoCusto ? prod.precoCusto.toString() : '',
       descricao: prod.descricao,
       codigo: prod.codigo,
       estoque: prod.estoque ? prod.estoque.toString() : '',
+      fornecedor_id: prod.fornecedor_id, // Adicionar fornecedor_id
     });
     setCurrentProductId(prod.id);
     setModalAction('edit');
@@ -72,15 +86,16 @@ export function CadastroProduto() {
     setEditingProduto({
       nome: '',
       preco: '',
-      precoCusto: '', // Adicionar o campo "Preço de Custo"
+      precoCusto: '',
       descricao: '',
       codigo: '',
       estoque: '',
+      fornecedor_id: '', // Adicionar fornecedor_id
     });
     setCurrentProductId(null);
     setModalAction('create');
     setIsModalOpen(true);
-  };
+ };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -89,7 +104,6 @@ export function CadastroProduto() {
     setModalAction(null);
   };
 
-  // Função para filtrar os produtos com base no termo de busca
   const filteredProdutos = produtos.filter((prod) =>
     prod.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -136,9 +150,10 @@ export function CadastroProduto() {
                   <tr>
                     <th>Nome</th>
                     <th>Preço</th>
-                    <th>Preço de Custo</th> {/* Adicionar coluna "Preço de Custo" */}
+                    <th>Preço de Custo</th>
                     <th>Código</th>
                     <th>Estoque</th>
+                    <th>Fornecedor</th> {/* Nova coluna para o fornecedor */}
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -147,9 +162,10 @@ export function CadastroProduto() {
                     <tr key={prod.id}>
                       <td className="align-middle">{prod.nome}</td>
                       <td className="align-middle">R$ {parseFloat(prod.preco).toFixed(2)}</td>
-                      <td className="align-middle">R$ {prod.precoCusto ? parseFloat(prod.precoCusto).toFixed(2) : 'N/A'}</td> {/* Exibir "Preço de Custo" */}
+                      <td className="align-middle">R$ {prod.precoCusto ? parseFloat(prod.precoCusto).toFixed(2) : 'N/A'}</td>
                       <td className="align-middle">{prod.codigo}</td>
                       <td className="align-middle">{prod.estoque}</td>
+                      <td className="align-middle">{prod.fornecedores?.nome || 'N/A'}</td> {/* Exibir nome do fornecedor */}
                       <td className="align-middle text-center">
                         <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(prod)}>
                           <Edit2 size={16} />
@@ -179,7 +195,7 @@ export function CadastroProduto() {
         show={modalAction === 'create' || modalAction === 'edit'}
         handleClose={closeModal}
         carregarProdutos={carregarProdutos}
-        produtoInicial={editingProduto || { nome: '', preco: '', precoCusto: '', descricao: '', codigo: '', estoque: '' }}
+        produtoInicial={editingProduto || { nome: '', preco: '', precoCusto: '', descricao: '', codigo: '', estoque: '', fornecedor_id: '' }}
         editingId={currentProductId}
       />
     </div>

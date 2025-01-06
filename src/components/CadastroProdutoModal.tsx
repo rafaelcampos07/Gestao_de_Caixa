@@ -3,7 +3,7 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import { Save, Plus, X } from 'lucide-react';
-import type { Produto } from '../types';
+import type { Produto, Fornecedor } from '../types';
 
 interface CadastroProdutoModalProps {
   show: boolean;
@@ -20,50 +20,37 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
   produtoInicial = {
     nome: '',
     preco: '',
-    precoCusto: '', // Adicionado o campo "Preço de Custo"
+    precoCusto: '',
     descricao: '',
     codigo: '',
     estoque: '',
+    fornecedor_id: '',
   },
   editingId = null,
 }) => {
   const [produto, setProduto] = useState<Partial<Produto>>(produtoInicial);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
 
   useEffect(() => {
-    setProduto(produtoInicial); // Atualize o estado quando `produtoInicial` mudar
-  }, [produtoInicial]);
+    if (show) {
+      setProduto(produtoInicial);
+    }
+  }, [show, produtoInicial]);
 
   useEffect(() => {
-    const carregarProduto = async () => {
-      if (editingId) {
-        const { data, error } = await supabase
-          .from('produtos')
-          .select('*')
-          .eq('id', editingId)
-          .single();
-
-        if (error) {
-          toast.error('Erro ao carregar produto para edição');
-          return;
-        }
-
-        if (data) {
-          setProduto({
-            nome: data.nome,
-            preco: data.preco.toString(),
-            precoCusto: data.precoCusto ? data.precoCusto.toString() : '',
-            descricao: data.descricao,
-            codigo: data.codigo,
-            estoque: data.estoque ? data.estoque.toString() : ''
-          });
-        }
+    const carregarFornecedores = async () => {
+      const { data, error } = await supabase.from('fornecedores').select('*');
+      if (error) {
+        toast.error('Erro ao carregar fornecedores');
+        return;
       }
+      setFornecedores(data || []);
     };
 
     if (show) {
-      carregarProduto();
+      carregarFornecedores();
     }
-  }, [show, editingId]);
+  }, [show]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +61,7 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
     }
 
     const preco = parseFloat(produto.preco);
-    const precoCusto = produto.precoCusto ? parseFloat(produto.precoCusto) : null; // Não obrigatório
+    const precoCusto = produto.precoCusto ? parseFloat(produto.precoCusto) : null;
     const estoque = produto.estoque ? parseInt(produto.estoque) : null;
 
     if (isNaN(preco) || (produto.precoCusto && isNaN(precoCusto)) || (produto.estoque && isNaN(estoque))) {
@@ -83,16 +70,24 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
     }
 
     try {
+      const produtoData = {
+        ...produto,
+        preco,
+        precoCusto,
+        estoque,
+        fornecedor_id: produto.fornecedor_id || null, // Define como null se não houver fornecedor
+      };
+
       if (editingId) {
         const { error } = await supabase
           .from('produtos')
-          .update({ ...produto, preco, precoCusto, estoque })
+          .update(produtoData)
           .eq('id', editingId);
 
         if (error) throw error;
         toast.success('Produto atualizado com sucesso!');
       } else {
-        const { error } = await supabase.from('produtos').insert([{ ...produto, preco, precoCusto, estoque }]);
+        const { error } = await supabase.from('produtos').insert([produtoData]);
 
         if (error) throw error;
         toast.success('Produto cadastrado com sucesso!');
@@ -105,6 +100,7 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
         descricao: '',
         codigo: '',
         estoque: '',
+        fornecedor_id: '', // Reseta para vazio
       });
       carregarProdutos();
       handleClose();
@@ -121,6 +117,7 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
       descricao: '',
       codigo: '',
       estoque: '',
+      fornecedor_id: '',
     });
     handleClose();
   };
@@ -147,7 +144,7 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
               type="number"
               step="0.01"
               value={produto.preco || ''}
-              onChange={(e) => setProduto({ ...produto, preco: e.target.value })}
+ onChange={(e) => setProduto({ ...produto, preco: e.target.value })}
               required
             />
           </Form.Group>
@@ -158,6 +155,15 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
               step="0.01"
               value={produto.precoCusto || ''}
               onChange={(e) => setProduto({ ...produto, precoCusto: e.target.value })}
+            />
+          </Form.Group>
+          <Form.Group controlId="descricao" className="mb-3">
+            <Form.Label>Descrição</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={produto.descricao || ''}
+              onChange={(e) => setProduto({ ...produto, descricao: e.target.value })}
             />
           </Form.Group>
           <Form.Group controlId="codigo" className="mb-3">
@@ -176,24 +182,27 @@ const CadastroProdutoModal: React.FC<CadastroProdutoModalProps> = ({
               onChange={(e) => setProduto({ ...produto, estoque: e.target.value })}
             />
           </Form.Group>
-          <Form.Group controlId="descricao" className="mb-3">
-            <Form.Label>Descrição</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              value={produto.descricao || ''}
-              onChange={(e) => setProduto({ ...produto, descricao: e.target.value })}
-            />
+          <Form.Group controlId="fornecedor_id" className="mb-3">
+            <Form.Label>Fornecedor</Form.Label>
+            <Form.Select
+              value={produto.fornecedor_id || ''}
+              onChange={(e) => setProduto({ ...produto, fornecedor_id: e.target.value })}
+            >
+              <option value="">Selecione um fornecedor</option>
+              {fornecedores.map((fornecedor) => (
+                <option key={fornecedor.id} value={fornecedor.id}>
+                  {fornecedor.nome}
+                </option>
+              ))}
+            </Form.Select>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={cancelEdit}>
-            <X size={20} />
-            Cancelar
+            <X /> Cancelar
           </Button>
-          <Button type="submit" variant="primary">
-            {editingId ? <Save size={20} /> : <Plus size={20} />}
-            {editingId ? 'Salvar Alterações' : 'Cadastrar Produto'}
+          <Button variant="primary" type="submit">
+            <Save /> Salvar
           </Button>
         </Modal.Footer>
       </Form>
