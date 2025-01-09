@@ -107,10 +107,11 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
           <div className="flex justify-center items-center mb-8 space-x-3">
-            <ShoppingBag className="w-12 h-12 text-indigo-600" />
-            <h1 className="text-4xl font-extrabold text-center text-indigo-600">
-              Gestão de Caixa
-            </h1>
+           <img 
+  src="https://i.imgur.com/2z5T4oP.png"  // Este é o link direto para a imagem do Imgur
+  alt="Logo RCS Azul"
+  className="w-94 h-54" 
+            />
           </div>
 
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { Save, Plus, X } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import type { Funcionario } from '../types';
 
 interface CadastroFuncionarioModalProps {
@@ -22,19 +22,22 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
     celular: '',
     email: '',
     funcao: '',
+    cpf: '',
+    observacoes: '',
   },
   editingId = null,
 }) => {
   const [funcionario, setFuncionario] = useState<Partial<Funcionario>>(funcionarioInicial);
 
   useEffect(() => {
+    // Update the state with the initial employee data when the modal opens
     setFuncionario(funcionarioInicial);
   }, [funcionarioInicial]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Verifique se o nome está preenchido
+    // Validate required fields
     if (!funcionario.nome) {
       toast.error('Por favor, preencha o campo Nome.');
       return;
@@ -50,23 +53,26 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
       if (editingId) {
         const { error } = await supabase
           .from('funcionarios')
-          .update({ ...funcionario, user_id: user.id }) // Atualiza o user_id
+          .update({ ...funcionario, user_id: user.id }) // Update user_id
           .eq('id', editingId);
 
         if (error) throw error;
         toast.success('Funcionário atualizado com sucesso!');
       } else {
-        const { error } = await supabase.from('funcionarios').insert([{ ...funcionario, user_id: user.id }]); // Salva o user_id
+        const { error } = await supabase.from('funcionarios').insert([{ ...funcionario, user_id: user.id }]); // Save user_id
 
         if (error) throw error;
         toast.success('Funcionário cadastrado com sucesso!');
       }
 
+      // Reset the state after the operation
       setFuncionario({
         nome: '',
         celular: '',
         email: '',
         funcao: '',
+        cpf: '',
+        observacoes: '',
       });
       carregarFuncionarios();
       handleClose();
@@ -81,6 +87,8 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
       celular: '',
       email: '',
       funcao: '',
+      cpf: '',
+      observacoes: '',
     });
     handleClose();
   };
@@ -114,7 +122,7 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
             <Form.Control
               type="email"
               value={funcionario.email || ''}
-              onChange={(e) => setFuncionario({ ...funcionario, email: e.target.value })}
+              onChange={(e) => setFuncionario({ ... funcionario, email: e.target.value })}
             />
           </Form.Group>
           <Form.Group controlId="funcao" className="mb-3">
@@ -124,7 +132,23 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
               value={funcionario.funcao || ''}
               onChange={(e) => setFuncionario({ ...funcionario, funcao: e.target.value })}
             />
- 
+          </Form.Group>
+          <Form.Group controlId="cpf" className="mb-3">
+            <Form.Label>CPF</Form.Label>
+            <Form.Control
+              type="text"
+              value={funcionario.cpf || ''}
+              onChange={(e) => setFuncionario({ ...funcionario, cpf: e.target.value })}
+            />
+          </Form.Group>
+          <Form.Group controlId="observacoes" className="mb-3">
+            <Form.Label>Observações</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={funcionario.observacoes || ''}
+              onChange={(e) => setFuncionario({ ...funcionario, observacoes: e.target.value })}
+            />
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
@@ -132,7 +156,7 @@ const CadastroFuncionarioModal: React.FC<CadastroFuncionarioModalProps> = ({
             <X /> Cancelar
           </Button>
           <Button variant="primary" type="submit">
-            <Save /> Salvar
+            <Save /> {editingId ? 'Salvar' : 'Cadastrar'}
           </Button>
         </Modal.Footer>
       </Form>

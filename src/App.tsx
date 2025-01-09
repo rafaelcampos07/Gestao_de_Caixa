@@ -7,14 +7,12 @@ import { CadastroProduto } from './components/CadastroProduto';
 import { PDV } from './components/PDV';
 import { RelatorioVendas } from './components/RelatorioVendas';
 import { CadastroFuncionario } from './components/CadastroFuncionario';
-import { CadastroFornecedor } from './components/CadastroFornecedor'; // Importando o novo componente
+import { CadastroFornecedor } from './components/CadastroFornecedor';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import Watermark from './components/Watermark';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
-import { Package, ShoppingCart, ShoppingBag, Users } from 'lucide-react';
-import { AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Tabs, Tab, useMediaQuery, Typography, Divider, Button } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import LogoutIcon from '@mui/icons-material/Logout';
+import { Package, ShoppingCart, ShoppingBag, Users, LogOut } from 'lucide-react';
+import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useMediaQuery, Toolbar } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -24,10 +22,10 @@ import './index.css';
 function App() {
   const [session, setSession] = useState(null);
   const [tab, setTab] = useState('pdv');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -53,12 +51,8 @@ function App() {
     } else {
       setSession(null);
       toast.success('Desconectado com sucesso');
-      setLogoutModalOpen(false);
     }
-  };
-
-  const handleCloseLogoutModal = () => {
-    setLogoutModalOpen(false);
+    setIsLogoutModalOpen(false);
   };
 
   const handleDelete = async () => {
@@ -74,179 +68,153 @@ function App() {
       } catch (error) {
         toast.error('Erro ao excluir produto');
       } finally {
-        setIsModalOpen(false);
+        setIsDeleteModalOpen(false);
         setCurrentProductId(null);
       }
     }
   };
 
-  const openModal = (id: string) => {
+  const openDeleteModal = (id: string) => {
     setCurrentProductId(id);
-    setIsModalOpen(true);
-  };
-
-  const toggleDrawer = (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
-    if (
-      event.type === 'keydown' &&
-      ((event as React.KeyboardEvent).key === 'Tab' || (event as React.KeyboardEvent).key === 'Shift')
-    ) {
-      return;
-    }
-    setDrawerOpen(open);
+    setIsDeleteModalOpen(true);
   };
 
   const drawerContent = (
-    <div
-      onClick={toggleDrawer(false)}
-      onKeyDown={toggleDrawer(false)}
-    >
+    <div>
+      <Toolbar>
+        {/* Substituindo o título por uma logo */}
+        <div className="app-bar-logo">
+          <img 
+  src="https://i.imgur.com/Djaqtr2.png"  // Este é o link direto para a imagem do Imgur
+  alt="Logo RCS Azul"
+  className="w-104 h-34" 
+/>
+
+        </div>
+      </Toolbar>
       <List>
-        <ListItem button onClick={() => setTab('produtos')}>
-          <ListItemIcon><Package /></ListItemIcon>
-          <ListItemText primary="Produtos" />
-        </ListItem>
-        <ListItem button onClick={() => setTab('fornecedores')}>
-          <ListItemIcon><ShoppingBag /></ListItemIcon>
-          <ListItemText primary="Fornecedores" />
-        </ListItem>
-        <ListItem button onClick={() => setTab('funcionarios')}>
-          <ListItemIcon><Users /></ListItemIcon>
-          <ListItemText primary="Funcionários" />
-        </ListItem>
-        <ListItem button onClick={() => setTab('pdv')}>
-          <ListItemIcon><ShoppingCart /></ListItemIcon>
-          <ListItemText primary="PDV" />
-        </ListItem>
-        <ListItem button onClick={() => setTab('vendas')}>
-          <ListItemIcon><ShoppingBag /></ListItemIcon>
-          <ListItemText primary="Vendas" />
+        {[
+          { key: 'produtos', label: 'Produtos', icon: <Package /> },
+          { key: 'fornecedores', label: 'Fornecedores', icon: <ShoppingBag /> },
+          { key: 'funcionarios', label: 'Funcionários', icon: <Users /> },
+          { key: 'pdv', label: 'PDV', icon: <ShoppingCart /> },
+          { key: 'vendas', label: 'Vendas', icon: <ShoppingBag /> },
+        ].map((item) => (
+          <ListItem
+            button
+            key={item.key}
+            onClick={() => setTab(item.key)}
+            sx={{
+              backgroundColor: tab === item.key ? '#6366f1' : 'transparent',
+              color: tab === item.key ? '#fff' : '#cbd5e1',
+              fontWeight: tab === item.key ? 'bold' : 'normal',
+              transition: 'all 0.3s ease-in-out',
+              '&:hover': {
+                backgroundColor: '#4f46e5',
+                color: '#fff',
+                transform: 'scale(1.02)', // Leve zoom
+              },
+              '&:hover .MuiListItemIcon-root': {
+                transform: 'scale(1.2)', // Ícone aumenta ao passar o mouse
+                transition: 'transform 0.3s ease-in-out',
+              },
+            }}
+          >
+            <ListItemIcon
+              className="MuiListItemIcon-root"
+              sx={{
+                color: tab === item.key ? '#fff' : '#cbd5e1',
+                transition: 'transform 0.3s ease-in-out',
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.label} />
+          </ListItem>
+        ))}
+        <ListItem button onClick={() => setIsLogoutModalOpen(true)}>
+          <ListItemIcon sx={{ color: '#fff' }}>
+            <LogOut />
+          </ListItemIcon>
+          <ListItemText primary="Sair" sx={{ color: '#fff' }} />
         </ListItem>
       </List>
     </div>
   );
 
-  if (!session) {
-    return (
-      <>
-        <LoginPage />
-        <Watermark />
-      </>
-    );
-  }
-
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen bg-neutral-50">
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              background: '#fff',
-              color: '#333',
-              borderRadius: '0.75rem',
-              border: '1px solid #e5e7eb',
-            },
-          }}
-        />
-        {isMobile ? (
-          <>
-            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, backgroundColor: '#4f46e5' }}>
-              <Toolbar>
-                <IconButton
-                  edge="start"
-                  color="inherit"
-                  aria-label="menu"
-                  onClick={toggleDrawer(true)}
-                >
-                  <MenuIcon />
-                </IconButton>
-                <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-                  Gestão de Caixa
-                </Typography>
-                {session && session.user && (
-                  <>
-                    <Typography variant="body2" noWrap sx={{ marginRight: 2 }}>
-                      {session.user.email}
-                    </Typography>
-                    <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
-                      Sair
-                    </Button>
-                  </>
-                )}
-              </Toolbar>
-            </AppBar>
+    <>
+      {session ? (
+        <Router>
+          <div className="flex">
             <Drawer
-              anchor="left"
+              variant={isMobile ? 'temporary' : 'permanent'}
               open={drawerOpen}
-              onClose={toggleDrawer(false)}
+              onClose={() => setDrawerOpen(false)}
               sx={{
                 '& .MuiDrawer-paper': {
                   boxSizing: 'border-box',
                   width: 240,
+                  backgroundColor: '#4f46e5',
                 },
               }}
             >
-              <Toolbar />
-              <Divider />
               {drawerContent}
             </Drawer>
-          </>
-        ) : (
-          <AppBar position="static" sx={{ backgroundColor: '#4f46e5' }}>
-            <Toolbar>
-              <Tabs value={tab} onChange={(e, newValue) => setTab(newValue)} textColor="inherit" indicatorColor="secondary" className="tabs-left">
-                <Tab value="produtos" label="Produtos" icon={<Package />} iconPosition="start" />
-                <Tab value="fornecedores" label="Fornecedores" icon={<ShoppingBag />} iconPosition="start" /> {/* Nova aba "Fornecedores" */}
-                <Tab value="funcionarios" label="Funcionários" icon={<Users />} iconPosition="start" />
-                <Tab value="pdv" label="PDV" icon={<ShoppingCart />} iconPosition="start" />
-                <Tab value="vendas" label="Vendas" icon={<ShoppingBag />} iconPosition="start" />
-              </Tabs>
-              {session && session.user && (
-                <>
-                  <Typography variant="body2" noWrap sx={{ flexGrow: 1, textAlign: 'right', marginRight: 2 }}>
-                    {session.user.email}
-                  </Typography>
-                  <Button color="inherit" onClick={() => setLogoutModalOpen(true)} startIcon={<LogoutIcon />}>
-                    Sair
-                  </Button>
-                </>
-              )}
-            </Toolbar>
-          </AppBar>
-        )}
-
-        <main className="flex-grow max-w-7xl mx-auto p-4">
-          <Routes>
-            <Route path="/" element={
-              <>
-                {tab === 'produtos' && <CadastroProduto openModal={openModal} />}
-                {tab === 'fornecedores' && <CadastroFornecedor />} {/* Renderizando o novo componente */}
-                {tab === 'pdv' && <PDV />}
-                {tab === 'vendas' && <RelatorioVendas />}
-                {tab === 'funcionarios' && <CadastroFuncionario />}
-              </>
-            } />
-            <Route path="/update-password" element={<ResetPasswordPage />} />
-          </Routes>
-        </main>
-
-        <Watermark />
-
-        <ConfirmDeleteModal
-          show={isModalOpen}
-          handleClose={() => setIsModalOpen(false)}
-          handleConfirm={handleDelete}
-          message="Tem certeza que deseja excluir este produto?"
-        />
-
-        <ConfirmDeleteModal
-          show={logoutModalOpen}
-          handleClose={handleCloseLogoutModal}
-          handleConfirm={handleLogout}
-          message="Tem certeza que deseja sair?"
-        />
-      </div>
-    </Router>
+            <div
+              className="flex-grow"
+              style={{
+                marginLeft: isMobile ? 0 : 240,
+              }}
+            >
+              <main className="p-4">
+                <Toaster
+                  position="top-right"
+                  toastOptions={{
+                    style: {
+                      background: '#fff',
+                      color: '#333',
+                      borderRadius: '0.75rem',
+                      border: '1px solid #e5e7eb',
+                    },
+                  }}
+                />
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <>
+                        {tab === 'produtos' && <CadastroProduto openModal={openDeleteModal} />}
+                        {tab === 'fornecedores' && <CadastroFornecedor />}
+                        {tab === 'funcionarios' && <CadastroFuncionario />}
+                        {tab === 'pdv' && <PDV />}
+                        {tab === 'vendas' && <RelatorioVendas />}
+                      </>
+                    }
+                  />
+                  <Route path="/update-password" element={<ResetPasswordPage />} />
+                </Routes>
+              </main>
+              <Watermark />
+              <ConfirmDeleteModal
+                show={isDeleteModalOpen}
+                handleClose={() => setIsDeleteModalOpen(false)}
+                handleConfirm={handleDelete}
+                message="Tem certeza que deseja excluir este produto?"
+              />
+            </div>
+          </div>
+        </Router>
+      ) : (
+        <LoginPage />
+      )}
+      <ConfirmDeleteModal
+        show={isLogoutModalOpen}
+        handleClose={() => setIsLogoutModalOpen(false)}
+        handleConfirm={handleLogout}
+        message="Tem certeza que deseja sair do sistema?"
+      />
+    </>
   );
 }
 

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Table, FormControl, InputGroup, Spinner } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit2, Trash2, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, User, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import CadastroFuncionarioModal from './CadastroFuncionarioModal';
+import ObservacaoModal from './ObservacaoModal'; // Modal para exibir observações
 import type { Funcionario } from '../types';
 
 export function CadastroFuncionario() {
@@ -12,7 +13,8 @@ export function CadastroFuncionario() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentFuncionarioId, setCurrentFuncionarioId] = useState<string | null>(null);
   const [editingFuncionario, setEditingFuncionario] = useState<Partial<Funcionario> | null>(null);
-  const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | null>(null);
+  const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | 'view-observacao' | null>(null);
+  const [currentObservacao, setCurrentObservacao] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +24,7 @@ export function CadastroFuncionario() {
 
   const carregarFuncionarios = async () => {
     setLoading(true);
-    const { data: { user }, error: userError } = await supabase.auth.getUser ();
+    const { data: { user }, error: userError } = await supabase.auth.getUser  ();
     if (userError || !user) {
       toast.error('Erro ao obter usuário autenticado');
       setLoading(false);
@@ -49,6 +51,8 @@ export function CadastroFuncionario() {
       celular: func.celular || '',
       email: func.email || '',
       funcao: func.funcao || '',
+      cpf: func.cpf || '', // Certifique-se de que o CPF está sendo passado
+      observacoes: func.observacoes || '', // Certifique-se de que as observações estão sendo passadas
     });
     setCurrentFuncionarioId(func.id);
     setModalAction('edit');
@@ -84,6 +88,8 @@ export function CadastroFuncionario() {
       celular: '',
       email: '',
       funcao: '',
+      cpf: '', // Adicione o CPF aqui
+      observacoes: '', // Adicione as observações aqui
     });
     setCurrentFuncionarioId(null);
     setModalAction('create');
@@ -95,6 +101,12 @@ export function CadastroFuncionario() {
     setCurrentFuncionarioId(null);
     setEditingFuncionario(null);
     setModalAction(null);
+  };
+
+  const openObservacaoModal = (observacao: string) => {
+    setCurrentObservacao(observacao);
+    setModalAction('view-observacao');
+    setIsModalOpen(true);
   };
 
   const filteredFuncionarios = funcionarios.filter((func) =>
@@ -117,7 +129,7 @@ export function CadastroFuncionario() {
       ) : (
         <>
           <div className="d-flex justify-content-center mb-4">
-            < Button variant="primary" onClick={openCreateModal}>
+            <Button variant="primary" onClick={openCreateModal}>
               <Plus size={20} />
               Cadastrar Novo Funcionário
             </Button>
@@ -126,7 +138,8 @@ export function CadastroFuncionario() {
           <h2 className="text-2xl font-bold mt-8 mb-4 text-center">Funcionários Cadastrados</h2>
           <div className="d-flex justify-content-center mb-4">
             <InputGroup className="mb-3">
-              <FormControl placeholder="Buscar funcionário"
+              <FormControl
+                placeholder="Buscar funcionário"
                 aria-label="Buscar funcionário"
                 aria-describedby="basic-addon2"
                 value={searchTerm}
@@ -144,6 +157,7 @@ export function CadastroFuncionario() {
                     <th>Celular</th>
                     <th>Email</th>
                     <th>Função</th>
+                    <th>CPF</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -154,12 +168,16 @@ export function CadastroFuncionario() {
                       <td className="align-middle">{func.celular}</td>
                       <td className="align-middle">{func.email}</td>
                       <td className="align-middle">{func.funcao}</td>
+                      <td className="align-middle">{func.cpf}</td>
                       <td className="align-middle text-center">
-                        <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(func)}>
+                        <Button variant="outline-primary" className="btn-sm mx-1" onClick={() => handleEdit(func)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(func.id)}>
+                        <Button variant="outline-danger" className="btn-sm mx-1" onClick={() => openDeleteModal(func.id)}>
                           <Trash2 size={16} />
+                        </Button>
+                        <Button variant="outline-secondary" className="btn-sm mx-1" onClick={() => openObservacaoModal(func.observacoes || '')}>
+                          <Eye size={16} />
                         </Button>
                       </td>
                     </tr>
@@ -183,8 +201,13 @@ export function CadastroFuncionario() {
         show={modalAction === 'create' || modalAction === 'edit'}
         handleClose={closeModal}
         carregarFuncionarios={carregarFuncionarios}
-        funcionarioInicial={editingFuncionario || { nome: '', celular: '', email: '', funcao: '' }}
+        funcionarioInicial={editingFuncionario || { nome: '', celular: '', email: '', funcao: '', cpf: '', observacoes: '' }}
         editingId={currentFuncionarioId}
+      />
+      <ObservacaoModal
+        show={modalAction === 'view-observacao' && isModalOpen}
+        handleClose={closeModal}
+        observacao={currentObservacao || ''}
       />
     </div>
   );

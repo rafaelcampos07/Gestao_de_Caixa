@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Table, FormControl, InputGroup, Spinner } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
-import { Plus, Edit2, Trash2, Package } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import CadastroProdutoModal from './CadastroProdutoModal';
+import ObservacaoModal from './ObservacaoModal';
 import type { Produto, Fornecedor } from '../types';
 
 export function CadastroProduto() {
@@ -13,7 +14,8 @@ export function CadastroProduto() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [editingProduto, setEditingProduto] = useState<Partial<Produto> | null>(null);
-  const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | null>(null);
+  const [modalAction, setModalAction] = useState<'create' | 'edit' | 'delete' | 'view-observacao' | null>(null);
+  const [currentObservacao, setCurrentObservacao] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -95,13 +97,19 @@ export function CadastroProduto() {
     setCurrentProductId(null);
     setModalAction('create');
     setIsModalOpen(true);
- };
+  };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setCurrentProductId(null);
     setEditingProduto(null);
     setModalAction(null);
+  };
+
+  const openObservacaoModal = (observacao: string) => {
+    setCurrentObservacao(observacao);
+    setModalAction('view-observacao');
+    setIsModalOpen(true);
   };
 
   const filteredProdutos = produtos.filter((prod) =>
@@ -153,25 +161,35 @@ export function CadastroProduto() {
                     <th>Preço de Custo</th>
                     <th>Código</th>
                     <th>Estoque</th>
-                    <th>Fornecedor</th> {/* Nova coluna para o fornecedor */}
+                    <th>Fornecedor</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredProdutos.map((prod) => (
-                    <tr key={prod.id}>
+                    <tr
+                      key={prod.id}
+                      className={prod.estoque === 0 || prod.estoque === null || prod.estoque === '' ? 'table-danger' : ''}
+                    >
                       <td className="align-middle">{prod.nome}</td>
                       <td className="align-middle">R$ {parseFloat(prod.preco).toFixed(2)}</td>
                       <td className="align-middle">R$ {prod.precoCusto ? parseFloat(prod.precoCusto).toFixed(2) : 'N/A'}</td>
                       <td className="align-middle">{prod.codigo}</td>
                       <td className="align-middle">{prod.estoque}</td>
-                      <td className="align-middle">{prod.fornecedores?.nome || 'N/A'}</td> {/* Exibir nome do fornecedor */}
+                      <td className="align-middle">{prod.fornecedores?.nome || 'N/A'}</td>
                       <td className="align-middle text-center">
                         <Button variant="outline-primary" className="btn-sm mr-2" onClick={() => handleEdit(prod)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button variant="outline-danger" className="btn-sm" onClick={() => openDeleteModal(prod.id)}>
+                        <Button variant="outline-danger" className="btn-sm mr-2" onClick={() => openDeleteModal(prod.id)}>
                           <Trash2 size={16} />
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          className="btn-sm"
+                          onClick={() => openObservacaoModal(prod.descricao || '')}
+                        >
+                          <Eye size={16} />
                         </Button>
                       </td>
                     </tr>
@@ -197,6 +215,11 @@ export function CadastroProduto() {
         carregarProdutos={carregarProdutos}
         produtoInicial={editingProduto || { nome: '', preco: '', precoCusto: '', descricao: '', codigo: '', estoque: '', fornecedor_id: '' }}
         editingId={currentProductId}
+      />
+      <ObservacaoModal
+        show={modalAction === 'view-observacao' && isModalOpen}
+        handleClose={closeModal}
+        observacao={currentObservacao || ''}
       />
     </div>
   );

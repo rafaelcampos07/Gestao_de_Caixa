@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Trash2, Edit3 } from 'lucide-react';
+import { Trash2, Edit3, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import EditarVendaModal from './EditarVendaModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
+import InformacoesModal from './InformacoesModal'; // Importando o novo modal
 import type { Venda, Funcionario } from '../types';
-import { Button } from 'react-bootstrap'; // Importando o botão do Bootstrap
+import { Button } from 'react-bootstrap';
 
 interface TabelaVendasProps {
   vendas: Venda[];
@@ -20,6 +21,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [vendaParaExcluir, setVendaParaExcluir] = useState<Venda | null>(null);
+  const [showInformacoesModal, setShowInformacoesModal] = useState(false); // Estado para o modal de informações
 
   const renderItensVenda = (itens) => {
     if (!Array.isArray(itens)) {
@@ -31,6 +33,11 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
         <span>R$ {(item.produto.preco * item.quantidade).toFixed(2)}</span>
       </div>
     ));
+  };
+
+  const handleInformacoesVenda = (venda: Venda) => {
+    setVendaSelecionada(venda);
+    setShowInformacoesModal(true);
   };
 
   const handleExcluirVenda = (venda: Venda) => {
@@ -100,17 +107,17 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border border-gray-300 shadow-lg rounded-lg">
+      <table class Name="min-w-full bg-white border border-gray-300 shadow-lg rounded-lg">
         <thead style={{ backgroundColor: '#4f46e5', color: 'white' }}>
           <tr>
             <th className="px-4 py-2 text-center border-b">Data e Hora</th>
-            <th class Name="px-4 py-2 text-center border-b">Funcionário</th>
+            <th className="px-4 py-2 text-center border-b">Funcionário</th>
             <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
             <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
             <th className="px-4 py-2 text-center border-b">Desconto (R$)</th>
             <th className="px-4 py-2 text-center border-b">Total da Venda</th>
             <th className="px-4 py-2 text-center border-b">Forma de Pagamento</th>
-            <th className="px-4 py-2 text-center border-b">Ações</th>
+            <th className="px-4 py-2 text-center">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -135,6 +142,13 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
                     onClick={() => handleEditarVenda(venda)}
                   >
                     <Edit3 size={16} />
+                  </Button>
+                  <Button
+                    variant="outline-info"
+                    className="btn-sm mr-2"
+                    onClick={() => handleInformacoesVenda(venda)}
+                  >
+                    <Info size={16} />
                   </Button>
                   <Button
                     variant="outline-danger"
@@ -166,6 +180,32 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
           handleClose={() => setShowConfirmDeleteModal(false)}
           handleConfirm={confirmarExcluirVenda}
           message="Deseja realmente excluir esta venda?"
+        />
+      )}
+
+      {showInformacoesModal && vendaSelecionada && (
+        <InformacoesModal
+          show={showInformacoesModal}
+          handleClose={() => setShowInformacoesModal(false)}
+          title="Informações da Venda"
+          content={
+            <div>
+              <p><strong>Data e Hora:</strong> {new Date(vendaSelecionada.data).toLocaleString()}</p>
+              <p><strong>Funcionário:</strong> {getFuncionarioNome(vendaSelecionada.funcionario_id)}</p>
+              <p><strong>Itens Vendidos:</strong></p>
+              <ul>
+                {vendaSelecionada.items.map((item, index) => (
+                  <li key={index}>
+                    {item.produto.nome} - {item.quantidade}x - R$ {(item.produto.preco * item.quantidade).toFixed (2)}
+                  </li>
+                ))}
+              </ul>
+              <p><strong>Desconto (%):</strong> {(vendaSelecionada.desconto_porcentagem ?? 0).toFixed(2)}%</p>
+              <p><strong>Desconto (R$):</strong> R$ {(vendaSelecionada.desconto_dinheiro ?? 0).toFixed(2)}</p>
+              <p><strong>Total da Venda:</strong> R$ {vendaSelecionada.total.toFixed(2)}</p>
+              <p><strong>Forma de Pagamento:</strong> {vendaSelecionada.forma_pagamento}</p>
+            </div>
+          }
         />
       )}
     </div>
