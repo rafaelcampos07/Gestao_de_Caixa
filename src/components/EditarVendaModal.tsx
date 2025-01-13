@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import { supabase } from "../lib/supabase";
 import { toast } from "react-hot-toast";
-import type { Venda, Funcionario } from "../types";
+import type { Venda, Funcionario, Cliente } from "../types";
 
 interface EditarVendaModalProps {
   show: boolean;
@@ -32,8 +32,12 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
   const [formData, setFormData] = useState<Venda | null>(null);
   const [total, setTotal] = useState<number>(0);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [buscaCliente, setBuscaCliente] = useState(''); // Estado para busca de clientes
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null); // Estado para o cliente selecionado
   const [descontoPorcentagem, setDescontoPorcentagem] = useState<string>('');
   const [descontoDinheiro, setDescontoDinheiro] = useState<string>('');
+  const [dividaAtiva, setDividaAtiva] = useState<boolean>(false); // Estado para controle de dívida ativa
 
   useEffect(() => {
     if (venda) {
@@ -41,15 +45,20 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       setFormData({ ...venda, items, data: formatDateTime(venda.data) });
       setDescontoPorcentagem(venda.desconto_porcentagem ? venda.desconto_porcentagem.toFixed(2) : '');
       setDescontoDinheiro(venda.desconto_dinheiro ? venda.desconto_dinheiro.toFixed(2) : '');
+      setClienteSelecionado(clientes.find(cliente => cliente.id === venda.cliente_id) || null); // Define o cliente selecionado
+      setDividaAtiva(venda.divida_ativa); // Define o estado da dívida ativa
       calculateTotal(items);
     } else {
       setFormData(null);
+      setClienteSelecionado(null); // Reseta o cliente selecionado
+      setDividaAtiva(false); // Reseta o estado da dívida ativa
     }
-  }, [venda]);
+  }, [venda, clientes]);
 
   useEffect(() => {
     if (show) {
       carregarFuncionarios();
+      carregarClientes(); // Carregar clientes ao abrir o modal
     }
   }, [show]);
 
@@ -64,10 +73,21 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
     }
   };
 
+  const carregarClientes = async () => {
+    try {
+      const { data, error } = await supabase.from('clientes').select('*'); // Supondo que você tenha uma tabela de clientes
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      toast.error('Erro ao carregar clientes');
+    }
+  };
+
   const formatDateTime = (dateTime: string): string => {
     const date = new Date(dateTime);
     const year = date.getFullYear();
-    const month = (`0${date.getMonth() + 1}`).slice(-2);
+    const month = (`0${date.getMonth() + 1}`).slice(- 2);
     const day = (`0${date.getDate()}`).slice(-2);
     const hours = (`0${date.getHours()}`).slice(-2);
     const minutes = (`0${date.getMinutes()}`).slice(-2);
@@ -173,7 +193,7 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
     if (formData.items.length === 0) return false;
 
     for (const item of formData.items) {
-      if (!item.produto.nome || item.produto.preco <= 0 || item.quantidade <= 0) return false;
+      if (!item.produto.nome || item .produto.preco <= 0 || item.quantidade <= 0) return false;
     }
 
     return true;
@@ -215,19 +235,17 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       const descontoDinheiroValue = descontoDinheiro ? parseFloat(descontoDinheiro) : 0;
       const descontoPorcentagemValue = descontoPorcentagem ? parseFloat(descontoPorcentagem) : 0;
 
-      // Log the total and items before saving
-      console.log("Total calculado antes de salvar:", total);
-      console.log("Items antes de salvar:", formData.items);
-
       const { data, error } = await supabase
         .from(tabela)
         .update({
           ...formData,
           data: new Date(formData.data).toISOString(),
-          total: total, // Ensure total is being passed correctly
-          items: formData.items, // Ensure items are being passed correctly
+          total: total,
+          items: formData.items,
           desconto_dinheiro: descontoDinheiroValue,
           desconto_porcentagem: descontoPorcentagemValue,
+          cliente_id: clienteSelecionado ? clienteSelecionado.id : null, // Adiciona o cliente selecionado
+          divida_ativa: dividaAtiva // Atualiza o estado da dívida ativa
         })
         .eq("id", formData.id)
         .select();
@@ -238,6 +256,14 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
         throw new Error("Nenhum dado retornado pelo Supabase");
       }
 
+      // Atualiza o status de divida_ativa do cliente
+      if (clienteSelecionado) {
+        await supabase
+          .from('clientes')
+          .update({ divida_ativa: dividaAtiva })
+          .eq('id', clienteSelecionado.id);
+      }
+
       toast.success("Venda atualizada com sucesso!");
       atualizarVenda();
       handleClose();
@@ -245,6 +271,15 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
       console.error("Erro ao atualizar venda:", error.message);
       toast.error(`Erro ao atualizar venda: ${error.message}`);
     }
+  };
+
+  const handleClienteSelect = (cliente: Cliente) => {
+    setClienteSelecionado(cliente);
+    setBuscaCliente(''); // Limpa a busca após selecionar
+  };
+
+  const handleClienteRemove = () => {
+    setClienteSelecionado(null);
   };
 
   return (
@@ -316,24 +351,60 @@ const EditarVendaModal: React.FC<EditarVendaModalProps> = ({ show, handleClose, 
               </Form.Group>
             </Col>
             <Col md={6}>
-              <Form.Group controlId="formFormaPagamento">
-                <Form.Label>Forma de Pagamento</Form.Label>
+              <Form.Group controlId="formCliente">
+                <Form.Label>Cliente</Form.Label>
                 <Form.Control
-                  as="select"
-                  name="forma_pagamento"
-                  value={formData?.forma_pagamento || ""}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Selecione a forma de pagamento</option>
-                  <option value="dinheiro">Dinheiro</option>
-                  <option value="pix">PIX</option>
-                  <option value="credito">Cartão de Crédito</option>
-                  <option value="debito">Cartão de Débito</option>
-                </Form.Control>
+                  type="text"
+                  placeholder="Pesquise pelo nome do cliente"
+                  value={buscaCliente}
+                  onChange={(e) => setBuscaCliente(e.target.value)}
+                />
+                {buscaCliente && clientes
+                  .filter(cliente => cliente.nome.toLowerCase().includes(buscaCliente.toLowerCase()))
+                  .map(cliente => (
+                    <div key={cliente.id} onClick={() => handleClienteSelect(cliente)} className="cursor-pointer">
+                      {cliente.nome}
+                    </div>
+                  ))}
+                {clienteSelecionado && (
+                  <div className="mt-2 p-2 border border-green-200 bg-green-50">
+                    <div>Cliente Selecionado: {clienteSelecionado.nome}</div>
+                    <Button variant="link" onClick={handleClienteRemove}>Remover Cliente</Button>
+                  </div>
+                )}
               </Form.Group>
             </Col>
           </Row>
+          <Form.Group controlId="formFormaPagamento">
+            <Form.Label>Forma de Pagamento</Form.Label>
+            <Form.Control
+              as="select"
+              name="forma_pagamento"
+              value={formData?.forma_pagamento || ""}
+              onChange={(e) => {
+                handleChange(e);
+                if (e.target.value !== "aprazo") {
+                  setDividaAtiva(false); // Reseta a dívida ativa se não for a prazo
+                }
+              }}
+              required
+            >
+              <option value="">Selecione a forma de pagamento</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="pix">PIX</option>
+              <option value="credito">Cartão de Crédito</option>
+              <option value="debito">Cartão de Débito</option>
+              <option value="aprazo">A Prazo</option>
+            </Form.Control>
+            {formData?.forma_pagamento === "aprazo" && (
+              <Form.Check
+                type="checkbox"
+                label="Dívida Ativa"
+                checked={dividaAtiva}
+                onChange={(e) => setDividaAtiva(e.target.checked)}
+              />
+            )}
+          </Form.Group>
           <Form.Group controlId="formItems">
             <Form.Label>Itens Vendidos</Form.Label>
             {formData?.items.map((item, index) => (

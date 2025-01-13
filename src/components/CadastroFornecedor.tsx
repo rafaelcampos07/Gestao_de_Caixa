@@ -128,9 +128,11 @@ export function CadastroFornecedor() {
         </div>
       ) : (
         <>
+          
           <div className="d-flex justify-content-center mb-4">
             <Button variant="primary" onClick={openCreateModal}>
               <Plus size={20} />
+              
               Cadastrar Novo Fornecedor
             </Button>
           </div>

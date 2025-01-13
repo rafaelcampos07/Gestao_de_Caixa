@@ -27,6 +27,8 @@ export function RelatorioVendas() {
     debito: 0,
     total: 0,
   });
+  const [valoresAReceber, setValoresAReceber] = useState(0); // Para vendas ativas
+  const [valoresAReceberFechadas, setValoresAReceberFechadas] = useState(0); // Para vendas fechadas
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -68,7 +70,7 @@ export function RelatorioVendas() {
 
   const carregarVendas = async (start?: Date, end?: Date) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser ();
       if (!user) {
         toast.error('Usuário não autenticado');
         return;
@@ -96,6 +98,18 @@ export function RelatorioVendas() {
       if (errorFechadas) throw errorFechadas;
       setVendasFechadas(fechadas || []);
       calcularTotais(fechadas || [], setTotaisFechados);
+
+      // Calcular valores a receber para vendas ativas
+      const valoresReceber = ativas?.filter(venda => venda.divida_ativa && venda.forma_pagamento === 'aprazo')
+        .reduce((acc, venda) => acc + venda.total, 0) || 0;
+
+      setValoresAReceber(valoresReceber);
+
+      // Calcular valores a receber para vendas fechadas
+      const valoresReceberFechadas = fechadas?.filter(venda => venda.divida_ativa && venda.forma_pagamento === 'aprazo')
+        .reduce((acc, venda) => acc + venda.total, 0) || 0;
+
+      setValoresAReceberFechadas(valoresReceberFechadas);
     } catch (error) {
       console.error('Erro ao carregar vendas:', error);
       toast.error('Erro ao carregar vendas');
@@ -107,12 +121,19 @@ export function RelatorioVendas() {
   const calcularTotais = (vendas: Venda[], setTotais: (totais: any) => void) => {
     const totais = vendas.reduce(
       (acc, venda) => {
-        const { forma_pagamento, total } = venda;
+        const { forma_pagamento, total, divida_ativa } = venda;
+
+        // Excluir vendas a prazo com divida_ativa TRUE do total geral
+        if (forma_pagamento === 'aprazo' && divida_ativa) {
+          return acc; // Não adiciona ao total
+        }
+
         if (forma_pagamento === 'dinheiro') acc.dinheiro += total;
         if (forma_pagamento === 'pix') acc.pix += total;
         if (forma_pagamento === 'credito') acc.credito += total;
         if (forma_pagamento === 'debito') acc.debito += total;
         acc.total += total;
+
         return acc;
       },
       { dinheiro: 0, pix: 0, credito: 0, debito: 0, total: 0 }
@@ -284,86 +305,113 @@ export function RelatorioVendas() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
-        <div className="card p-2 flex items-center gap-2">
-          <FaMoneyBillWave size={20} className="text-green-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaMoneyCheckAlt size={20} className="text-blue-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">PIX</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaCreditCard size={20} className="text-purple-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Crédito</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.credito.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaCreditCard size={20} className="text-purple-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Débito</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisAtivos.debito.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 bg-indigo-600 flex items-center gap-2">
-          <AiOutlineDollarCircle size={20} className="text-white" />
-          <div>
-            <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-            <div className="text-xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
-          </div>
-        </div>
-      </div>
+<div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-8">
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaMoneyBillWave size={40} className="text-green-800 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-800">Dinheiro</div>
+      <div className="text-2xl font-bold text-gray-900">R$ {totaisAtivos.dinheiro.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaMoneyCheckAlt size={40} className="text-blue-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">PIX</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.pix.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaCreditCard size={40} className="text-purple-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">Crédito</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.credito.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaCreditCard size={40} className="text-purple-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">Débito</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisAtivos.debito.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 bg-indigo-600 flex items-center gap-4 shadow-md rounded-lg text-center">
+    <AiOutlineDollarCircle size={40} className="text-white mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-indigo-100">Total Geral</div>
+      <div className="text-2xl font-semibold text-white">R$ {totaisAtivos.total.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 bg-yellow-500 flex items-center gap-4 shadow-md rounded-lg text-center">
+    <AiOutlineDollarCircle size={40} className="text-white mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-yellow-100">Valores a Receber</div>
+      <div className="text-2xl font-semibold text-white">R$ {valoresAReceber.toFixed(2)}</div>
+    </div>
+  </div>
+</div>
+
+
 
       <div className="mb-10">
         <h2 className="text-xl font-bold mb-4">Vendas Ativas</h2>
         <TabelaVendas vendas={vendasAtivas} excluirVenda={(id) => setVendaToDelete({ id, tabela: 'vendas' })} editarVenda={editarVenda} tipoTabela="ativas" funcionarios={funcionarios} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
-        <div className="card p-2 flex items-center gap-2">
-          <FaMoneyBillWave size={20} className="text-green-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Dinheiro</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaMoneyCheckAlt size={20} className="text-blue-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">PIX</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaCreditCard size={20} className="text-purple-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Crédito</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.credito.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 flex items-center gap-2">
-          <FaCreditCard size={20} className="text-purple-600" />
-          <div>
-            <div className="text-sm font-medium text-gray-600">Débito</div>
-            <div className="text-xl font-semibold text-gray-900">R$ {totaisFechados.debito.toFixed(2)}</div>
-          </div>
-        </div>
-        <div className="card p-2 bg-indigo-600 flex items-center gap-2">
-          <AiOutlineDollarCircle size={20} className="text-white" />
-          <div>
-            <div className="text-sm font-medium text-indigo-100">Total Geral</div>
-            <div className="text-xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
-          </div>
-        </div>
-      </div>
+     <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-8">
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaMoneyBillWave size={40} className="text-green-800 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-800">Dinheiro</div>
+      <div className="text-2xl font-bold text-gray-900">R$ {totaisFechados.dinheiro.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaMoneyCheckAlt size={40} className="text-blue-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">PIX</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.pix.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaCreditCard size={40} className="text-purple-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">Crédito</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.credito.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+    <FaCreditCard size={40} className="text-purple-600 mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-gray-600">Débito</div>
+      <div className="text-2xl font-semibold text-gray-900">R$ {totaisFechados.debito.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 bg-indigo-600 flex items-center gap-4 shadow-md rounded-lg text-center">
+    <AiOutlineDollarCircle size={40} className="text-white mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-indigo-100">Total Geral</div>
+      <div className="text-2xl font-semibold text-white">R$ {totaisFechados.total.toFixed(2)}</div>
+    </div>
+  </div>
+
+  <div className="card p-3 bg-yellow-500 flex items-center gap-4 shadow-md rounded-lg text-center">
+    <AiOutlineDollarCircle size={40} className="text-white mx-auto" /> {/* Ícone maior */}
+    <div>
+      <div className="text-lg font-medium text-yellow-100">Valores a Receber</div>
+      <div className="text-2xl font-semibold text-white">R$ {valoresAReceberFechadas.toFixed(2)}</div>
+    </div>
+  </div>
+</div>
+
 
       <div>
         <h2 className="text-xl font-bold mb-4">Vendas Fechadas</h2>

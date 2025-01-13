@@ -14,6 +14,7 @@ import ConfirmDeleteModal from './components/ConfirmDeleteModal';
 import { Package, ShoppingCart, ShoppingBag, Users, LogOut } from 'lucide-react';
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useMediaQuery, Toolbar } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import { CadastroCliente } from './components/CadastroCliente';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -93,45 +94,47 @@ function App() {
         </div>
       </Toolbar>
       <List>
-        {[
-          { key: 'produtos', label: 'Produtos', icon: <Package /> },
-          { key: 'fornecedores', label: 'Fornecedores', icon: <ShoppingBag /> },
-          { key: 'funcionarios', label: 'Funcionários', icon: <Users /> },
-          { key: 'pdv', label: 'PDV', icon: <ShoppingCart /> },
-          { key: 'vendas', label: 'Vendas', icon: <ShoppingBag /> },
-        ].map((item) => (
-          <ListItem
-            button
-            key={item.key}
-            onClick={() => setTab(item.key)}
-            sx={{
-              backgroundColor: tab === item.key ? '#6366f1' : 'transparent',
-              color: tab === item.key ? '#fff' : '#cbd5e1',
-              fontWeight: tab === item.key ? 'bold' : 'normal',
-              transition: 'all 0.3s ease-in-out',
-              '&:hover': {
-                backgroundColor: '#4f46e5',
-                color: '#fff',
-                transform: 'scale(1.02)', // Leve zoom
-              },
-              '&:hover .MuiListItemIcon-root': {
-                transform: 'scale(1.2)', // Ícone aumenta ao passar o mouse
-                transition: 'transform 0.3s ease-in-out',
-              },
-            }}
-          >
-            <ListItemIcon
-              className="MuiListItemIcon-root"
-              sx={{
-                color: tab === item.key ? '#fff' : '#cbd5e1',
-                transition: 'transform 0.3s ease-in-out',
-              }}
-            >
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItem>
-        ))}
+ {[
+  { key: 'produtos', label: 'Produtos', icon: <Package /> },
+  { key: 'fornecedores', label: 'Fornecedores', icon: <ShoppingBag /> },
+  { key: 'funcionarios', label: 'Funcionários', icon: <Users /> },
+  { key: 'clientes', label: 'Clientes', icon: <Users /> }, // Adicionando a aba Clientes
+  { key: 'pdv', label: 'PDV', icon: <ShoppingCart /> },
+  { key: 'vendas', label: 'Vendas', icon: <ShoppingBag /> },
+].map((item) => (
+  <ListItem
+    button
+    key={item.key}
+    onClick={() => setTab(item.key)}
+    sx={{
+      backgroundColor: tab === item.key ? '#6366f1' : 'transparent',
+      color: tab === item.key ? '#fff' : '#cbd5e1',
+      fontWeight: tab === item.key ? 'bold' : 'normal',
+      transition: 'all 0.3s ease-in-out',
+      '&:hover': {
+        backgroundColor: '#4f46e5',
+        color: '#fff',
+        transform: 'scale(1.02)', // Leve zoom
+      },
+      '&:hover .MuiListItemIcon-root': {
+        transform: 'scale(1.2)', // Ícone aumenta ao passar o mouse
+        transition: 'transform 0.3s ease-in-out',
+      },
+    }}
+  >
+    <ListItemIcon
+      className="MuiListItemIcon-root"
+      sx={{
+        color: tab === item.key ? '#fff' : '#cbd5e1',
+        transition: 'transform 0.3s ease-in-out',
+      }}
+    >
+      {item.icon}
+    </ListItemIcon>
+    <ListItemText primary={item.label} />
+  </ListItem>
+))}
+
         <ListItem button onClick={() => setIsLogoutModalOpen(true)}>
           <ListItemIcon sx={{ color: '#fff' }}>
             <LogOut />
@@ -187,6 +190,7 @@ function App() {
                         {tab === 'produtos' && <CadastroProduto openModal={openDeleteModal} />}
                         {tab === 'fornecedores' && <CadastroFornecedor />}
                         {tab === 'funcionarios' && <CadastroFuncionario />}
+                        {tab === 'clientes' && <CadastroCliente />}
                         {tab === 'pdv' && <PDV />}
                         {tab === 'vendas' && <RelatorioVendas />}
                       </>

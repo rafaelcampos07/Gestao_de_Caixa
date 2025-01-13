@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Edit3, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from 'react-hot-toast';
 import EditarVendaModal from './EditarVendaModal';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
-import InformacoesModal from './InformacoesModal'; // Importando o novo modal
+import InformacoesModal from './InformacoesModal';
 import type { Venda, Funcionario } from '../types';
 import { Button } from 'react-bootstrap';
 
@@ -21,7 +21,29 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
   const [showEditarModal, setShowEditarModal] = useState(false);
   const [showConfirmDeleteModal, setShowConfirmDeleteModal] = useState(false);
   const [vendaParaExcluir, setVendaParaExcluir] = useState<Venda | null>(null);
-  const [showInformacoesModal, setShowInformacoesModal] = useState(false); // Estado para o modal de informações
+  const [showInformacoesModal, setShowInformacoesModal] = useState(false);
+  const [clientes, setClientes] = useState<{ [key: string]: string }>({}); // Estado para armazenar os nomes dos clientes
+
+  useEffect(() => {
+    const carregarClientes = async () => {
+      try {
+        const { data, error } = await supabase.from('clientes').select('id, nome');
+        if (error) throw error;
+
+        const clientesMap = data.reduce((acc: { [key: string]: string }, cliente: { id: string; nome: string }) => {
+          acc[cliente.id] = cliente.nome;
+          return acc;
+        }, {});
+
+        setClientes(clientesMap);
+      } catch (error) {
+        console.error('Erro ao carregar clientes:', error);
+        toast.error('Erro ao carregar clientes');
+      }
+    };
+
+    carregarClientes();
+  }, []);
 
   const renderItensVenda = (itens) => {
     if (!Array.isArray(itens)) {
@@ -69,7 +91,7 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
             const { error: updateError } = await supabase
               .from('produtos')
               .update({ estoque: novoEstoque })
-              .eq('id', item.produto.id);
+ .eq('id', item.produto.id);
 
             if (updateError) {
               console.error('Erro ao atualizar estoque:', updateError);
@@ -107,11 +129,13 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
 
   return (
     <div className="overflow-x-auto">
-      <table class Name="min-w-full bg-white border border-gray-300 shadow-lg rounded-lg">
+      <table className="min-w-full bg-white border border-gray-300 shadow-lg rounded-lg">
         <thead style={{ backgroundColor: '#4f46e5', color: 'white' }}>
           <tr>
             <th className="px-4 py-2 text-center border-b">Data e Hora</th>
             <th className="px-4 py-2 text-center border-b">Funcionário</th>
+            <th className="px-4 py-2 text-center border-b">Cliente</th>
+            <th className="px-4 py-2 text-center border-b">Vencimento</th>
             <th className="px-4 py-2 text-center border-b">Itens Vendidos</th>
             <th className="px-4 py-2 text-center border-b">Desconto (%)</th>
             <th className="px-4 py-2 text-center border-b">Desconto (R$)</th>
@@ -120,48 +144,50 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
             <th className="px-4 py-2 text-center">Ações</th>
           </tr>
         </thead>
-        <tbody>
-          {vendas.length === 0 ? (
-            <tr>
-              <td className="border px-4 py-2 text-center" colSpan={8}>Nenhuma venda encontrada</td>
-            </tr>
-          ) : (
-            vendas.map((venda) => (
-              <tr key={venda.id} className="hover:bg-gray-100 transition duration-200">
-                <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
-                <td className="border px-4 py-2 text-center">{getFuncionarioNome(venda.funcionario_id)}</td>
-                <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
-                <td className="border px-4 py-2 text-center">{(venda.desconto_porcentagem ?? 0).toFixed(2)}%</td>
-                <td className="border px-4 py-2 text-center">R$ {(venda.desconto_dinheiro ?? 0).toFixed(2)}</td>
-                <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>
-                <td className="border px-4 py-2 text-center">{venda.forma_pagamento}</td>
-                <td className="border px-4 py-2 text-center flex justify-center">
-                  <Button
-                    variant="outline-primary"
-                    className="btn-sm mr-2"
-                    onClick={() => handleEditarVenda(venda)}
-                  >
-                    <Edit3 size={16} />
-                  </Button>
-                  <Button
-                    variant="outline-info"
-                    className="btn-sm mr-2"
-                    onClick={() => handleInformacoesVenda(venda)}
-                  >
-                    <Info size={16} />
-                  </Button>
-                  <Button
-                    variant="outline-danger"
-                    className="btn-sm"
-                    onClick={() => handleExcluirVenda(venda)}
-                  >
-                    <Trash2 size={16} />
-                  </Button>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
+       <tbody>
+  {vendas.length === 0 ? (
+    <tr>
+      <td className="border px-4 py-2 text-center" colSpan={10}>Nenhuma venda encontrada</td>
+    </tr>
+  ) : (
+    vendas.map((venda) => (
+      <tr key={venda.id} className={`hover:bg-gray-100 transition duration-200 ${venda.divida_ativa ? 'bg-red-200' : ''}`}>
+        <td className="border px-4 py-2 text-center">{new Date(venda.data).toLocaleString()}</td>
+        <td className="border px-4 py-2 text-center">{getFuncionarioNome(venda.funcionario_id)}</td>
+        <td className="border px-4 py-2 text-center">{clientes[venda.cliente_id] || 'N/A'}</td>
+        <td className="border px-4 py-2 text-center">{venda.data_limite_pagamento ? new Date(venda.data_limite_pagamento).toLocaleDateString('pt-BR') : 'N/A'}</td>
+        <td className="border px-4 py-2 text-center">{renderItensVenda(venda.items)}</td>
+        <td className="border px-4 py-2 text-center">{(venda.desconto_porcentagem ?? 0).toFixed(2)}%</td>
+        <td className="border px-4 py-2 text-center">R$ {(venda.desconto_dinheiro ?? 0).toFixed(2)}</td>
+        <td className="border px-4 py-2 text-center">R$ {venda.total.toFixed(2)}</td>
+        <td className="border px-4 py-2 text-center">{venda.forma_pagamento}</td>
+        <td className="border px-4 py-2 text-center flex justify-center">
+          <Button
+            variant="outline-primary"
+            className="btn-sm mr-2"
+            onClick={() => handleEditarVenda(venda)}
+          >
+            <Edit3 size={16} />
+          </Button>
+          <Button
+            variant="outline-info"
+            className="btn-sm mr-2"
+            onClick={() => handleInformacoesVenda(venda)}
+          >
+            <Info size={16} />
+          </Button>
+          <Button
+            variant="outline-danger"
+            className="btn-sm"
+            onClick={() => handleExcluirVenda(venda)}
+          >
+            <Trash2 size={16} />
+          </Button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
       </table>
 
       {showEditarModal && vendaSelecionada && (
@@ -192,11 +218,13 @@ const TabelaVendas: React.FC<TabelaVendasProps> = ({ vendas, excluirVenda, edita
             <div>
               <p><strong>Data e Hora:</strong> {new Date(vendaSelecionada.data).toLocaleString()}</p>
               <p><strong>Funcionário:</strong> {getFuncionarioNome(vendaSelecionada.funcionario_id)}</p>
+              <p><strong>Cliente:</strong> {clientes[vendaSelecionada.cliente_id] || 'N/A'}</p>
+              <p><strong>Data Limite:</strong> {vendaSelecionada.data_limite_pagamento ? new Date(vendaSelecionada.data_limite_pagamento).toLocaleDateString('pt-BR') : 'N/A'}</p>
               <p><strong>Itens Vendidos:</strong></p>
               <ul>
                 {vendaSelecionada.items.map((item, index) => (
                   <li key={index}>
-                    {item.produto.nome} - {item.quantidade}x - R$ {(item.produto.preco * item.quantidade).toFixed (2)}
+                    {item.produto.nome} - {item.quantidade}x - R$ {(item.produto.preco * item.quantidade).toFixed(2)}
                   </li>
                 ))}
               </ul>
