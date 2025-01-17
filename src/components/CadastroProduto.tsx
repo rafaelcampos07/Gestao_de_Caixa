@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Table, FormControl, InputGroup, Spinner } from 'react-bootstrap';
 import { supabase } from '../lib/supabase';
 import { Plus, Edit2, Trash2, Package, Eye } from 'lucide-react';
+import { AiOutlineDollarCircle } from 'react-icons/ai';
 import toast from 'react-hot-toast';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 import CadastroProdutoModal from './CadastroProdutoModal';
@@ -10,7 +11,7 @@ import type { Produto, Fornecedor } from '../types';
 
 export function CadastroProduto() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]); // Novo estado para fornecedores
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [editingProduto, setEditingProduto] = useState<Partial<Produto> | null>(null);
@@ -18,11 +19,21 @@ export function CadastroProduto() {
   const [currentObservacao, setCurrentObservacao] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [valorTotalPreco, setValorTotalPreco] = useState(0);
+  const [valorTotalPrecoCusto, setValorTotalPrecoCusto] = useState(0);
 
   useEffect(() => {
-    carregarFornecedores(); // Carregar fornecedores ao iniciar
+    carregarFornecedores();
     carregarProdutos();
   }, []);
+
+  useEffect(() => {
+    const totalPreco = produtos.reduce((acc, prod) => acc + (parseFloat(prod.preco) * (prod.estoque || 0) || 0), 0);
+    const totalPrecoCusto = produtos.reduce((acc, prod) => acc + (parseFloat(prod.precoCusto) * (prod.estoque || 0) || 0), 0);
+    
+    setValorTotalPreco(totalPreco);
+    setValorTotalPrecoCusto(totalPrecoCusto);
+  }, [produtos]);
 
   const carregarFornecedores = async () => {
     const { data, error } = await supabase.from('fornecedores').select('*');
@@ -37,7 +48,7 @@ export function CadastroProduto() {
     setLoading(true);
     const { data, error } = await supabase
       .from('produtos')
-      .select('*, fornecedores(*)'); // Carregar produtos com dados do fornecedor
+      .select('*, fornecedores(*)');
     if (error) {
       toast.error('Erro ao carregar produtos');
       return;
@@ -54,7 +65,7 @@ export function CadastroProduto() {
       descricao: prod.descricao,
       codigo: prod.codigo,
       estoque: prod.estoque ? prod.estoque.toString() : '',
-      fornecedor_id: prod.fornecedor_id, // Adicionar fornecedor_id
+      fornecedor_id: prod.fornecedor_id,
     });
     setCurrentProductId(prod.id);
     setModalAction('edit');
@@ -68,21 +79,21 @@ export function CadastroProduto() {
   };
 
   const handleDelete = async () => {
-    if (currentProductId) {
-      try {
-        const { error } = await supabase.from('produtos').delete().eq('id', currentProductId);
-        if (error) throw error;
-        toast.success('Produto excluído com sucesso!');
-        carregarProdutos();
-      } catch (error) {
-        toast.error('Erro ao excluir produto');
-      } finally {
-        setIsModalOpen(false);
-        setCurrentProductId(null);
-        setModalAction(null);
-      }
+  if (currentProductId) {
+    try {
+      const { error } = await supabase.from('produtos').delete().eq('id', currentProductId);
+      if (error) throw error;
+      toast.success('Produto excluído com sucesso!');
+      carregarProdutos();
+    } catch (error) {
+      toast.error('Erro ao excluir produto');
+    } finally {
+      setIsModalOpen(false);
+      setCurrentProductId(null);
+      setModalAction(null);
     }
-  };
+  }
+};
 
   const openCreateModal = () => {
     setEditingProduto({
@@ -92,7 +103,7 @@ export function CadastroProduto() {
       descricao: '',
       codigo: '',
       estoque: '',
-      fornecedor_id: '', // Adicionar fornecedor_id
+      fornecedor_id: '',
     });
     setCurrentProductId(null);
     setModalAction('create');
@@ -149,6 +160,24 @@ export function CadastroProduto() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </InputGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+            <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+              <AiOutlineDollarCircle size={40} className="text-green-800 mx-auto" />
+              <div>
+                <div className="text-lg font-medium text-gray-800">Valor Total Preço</div>
+                <div className="text-2xl font-bold text-gray-900">R$ {valorTotalPreco.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="card p-3 flex items-center gap-4 bg-white shadow-md rounded-lg text-center">
+              <AiOutlineDollarCircle size={40} className="text-blue-600 mx-auto" />
+              <div>
+                <div className="text-lg font-medium text-gray-600">Valor Total Preço de Custo</div>
+                <div className="text-2xl font-semibold text-gray-900">R$ {valorTotalPrecoCusto.toFixed(2)}</div>
+              </div>
+            </div>
           </div>
 
           {filteredProdutos.length > 0 ? (

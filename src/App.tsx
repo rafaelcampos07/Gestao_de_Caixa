@@ -15,6 +15,9 @@ import { Package, ShoppingCart, ShoppingBag, Users, LogOut } from 'lucide-react'
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Typography, useMediaQuery, Toolbar } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { CadastroCliente } from './components/CadastroCliente';
+import { Dashboard } from './components/Dashboard';
+import { FaChartBar } from 'react-icons/fa';
+
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -95,12 +98,14 @@ function App() {
       </Toolbar>
       <List>
  {[
+  
   { key: 'produtos', label: 'Produtos', icon: <Package /> },
   { key: 'fornecedores', label: 'Fornecedores', icon: <ShoppingBag /> },
   { key: 'funcionarios', label: 'Funcionários', icon: <Users /> },
   { key: 'clientes', label: 'Clientes', icon: <Users /> }, // Adicionando a aba Clientes
   { key: 'pdv', label: 'PDV', icon: <ShoppingCart /> },
   { key: 'vendas', label: 'Vendas', icon: <ShoppingBag /> },
+  { key: 'dashboard', label: 'Relatório', icon: <FaChartBar /> },
 ].map((item) => (
   <ListItem
     button
@@ -187,6 +192,7 @@ function App() {
                     path="/"
                     element={
                       <>
+                        {tab === 'dashboard' && <Dashboard />}
                         {tab === 'produtos' && <CadastroProduto openModal={openDeleteModal} />}
                         {tab === 'fornecedores' && <CadastroFornecedor />}
                         {tab === 'funcionarios' && <CadastroFuncionario />}

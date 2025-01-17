@@ -3,22 +3,23 @@ import { supabase } from '../lib/supabase';
 import { ShoppingCart, Trash2, Search, DollarSign, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Produto, ItemVenda, Venda, Funcionario, Cliente } from '../types';
+import { format, addHours } from 'date-fns';
 
 export function PDV() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]); // Estado para clientes
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [carrinho, setCarrinho] = useState<ItemVenda[]>([]);
   const [buscaProduto, setBuscaProduto] = useState('');
-  const [buscaCliente, setBuscaCliente] = useState(''); // Estado para busca de clientes
+  const [buscaCliente, setBuscaCliente] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<Venda['forma_pagamento']>('dinheiro');
   const [descontoPorcentagem, setDescontoPorcentagem] = useState<string>('');
   const [descontoDinheiro, setDescontoDinheiro] = useState<string>('');
   const [valorRecebido, setValorRecebido] = useState<number | null>(null);
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<string>('');
-  const [dataLimitePagamento, setDataLimitePagamento] = useState<string>(''); // Para a data limite de pagamento
-  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null); // Estado para cliente selecionado
+  const [dataLimitePagamento, setDataLimitePagamento] = useState<string>('');
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null);
 
   const [novoProduto, setNovoProduto] = useState({
     nome: '',
@@ -29,12 +30,12 @@ export function PDV() {
   useEffect(() => {
     carregarProdutos();
     carregarFuncionarios();
-    carregarClientes(); // Carregar clientes ao iniciar
+    carregarClientes();
   }, []);
 
   const carregarProdutos = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser  ();
+      const { data: { user } } = await supabase.auth.getUser ();
       
       if (!user) {
         toast.error('Usuário não autenticado');
@@ -69,7 +70,7 @@ export function PDV() {
 
   const carregarClientes = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser  ();
+      const { data: { user } } = await supabase.auth.getUser ();
       
       if (!user) {
         toast.error('Usuário não autenticado');
@@ -79,7 +80,7 @@ export function PDV() {
       const { data, error } = await supabase
         .from('clientes')
         .select('*')
-        .eq('user_id', user.id); // Filtra clientes pelo user_id
+        .eq('user_id', user.id);
 
       if (error) throw error;
       setClientes(data || []);
@@ -101,10 +102,10 @@ export function PDV() {
       }
     }
 
-    const subtotal = quantidade * (produto.preco || 0); // Certifique-se de que produto.preco não é null
+    const subtotal = quantidade * (produto.preco || 0);
 
     if (item) {
-      setCarrinho(carrinho .map(i => 
+      setCarrinho(carrinho.map(i => 
         i.produto.id === produto.id
           ? { ...i, quantidade: i.quantidade + quantidade, subtotal: (i.quantidade + quantidade) * (produto.preco || 0) }
           : i
@@ -135,85 +136,84 @@ export function PDV() {
   const totalComDesconto = descontoDinheiro ? total - parseFloat(descontoDinheiro) : (descontoPorcentagem ? total - (total * parseFloat(descontoPorcentagem)) / 100 : total);
   const troco = valorRecebido !== null ? valorRecebido - totalComDesconto : 0;
 
-const formatarDataISO = (data) => {
-  return data.toISOString().slice(0, 19).replace('T', ' '); // Formato: YYYY-MM-DD HH:MM:SS
-};
+  const formatarDataISO = (data) => {
+    return data.toISOString().slice(0, 19).replace('T', ' '); // Formato: YYYY-MM-DD HH:MM:SS
+  };
 
-
-const finalizarVenda = async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser ();
-    
-    if (!user) {
-      toast.error('Usuário não autenticado');
-      return;
-    }
-
-    if (carrinho.length === 0) {
-      toast.error('Adicione produtos ao carrinho');
-      return;
-    }
-
-    if (!funcionarioSelecionado) {
-      toast.error('Selecione um funcionário');
-      return;
-    }
-
-  const dataAtual = new Date();
-const venda = {
-  items: carrinho,
-  total: totalComDesconto,
-  forma_pagamento: formaPagamento,
-  desconto_dinheiro: descontoDinheiro ? parseFloat(descontoDinheiro) : 0,
-  desconto_porcentagem: descontoPorcentagem ? parseFloat(descontoPorcentagem) : 0,
-  data: formatarDataISO(dataAtual), // Use o formato ISO
-  finalizada: true,
-  user_id: user.id,
-  funcionario_id: funcionarioSelecionado,
-  cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
-  data_limite_pagamento: formaPagamento === 'aprazo' ? formatarDataISO(new Date(dataLimitePagamento)) : null, // Formato ISO
-  divida_ativa: formaPagamento === 'aprazo',
-};
-
-    const { error: vendaError } = await supabase.from('vendas').insert([venda]);
-    if (vendaError) throw vendaError;
-
-    for (const item of carrinho) {
-      if (!item.produto.avulso) {
-        const { data: produtoAtualizado, error: produtoError } = await supabase
-          .from('produtos')
-          .select('estoque')
-          .eq('id', item.produto.id)
-          .single();
-
-        if (produtoError) throw produtoError;
-
-        const novoEstoque = produtoAtualizado.estoque - item.quantidade;
-
-        const { error: updateError } = await supabase
-          .from('produtos')
-          .update({ estoque: novoEstoque })
-          .eq('id', item.produto.id);
-
-        if (updateError) throw updateError;
+  const finalizarVenda = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser  ();
+      
+      if (!user) {
+        toast.error('Usuário não autenticado');
+        return;
       }
-    }
 
-    toast.success('Venda finalizada com sucesso!');
-    setCarrinho([]);
-    setDescontoPorcentagem('');
-    setDescontoDinheiro('');
-    setFormaPagamento('dinheiro');
-    setFuncionarioSelecionado('');
-    setValorRecebido(null);
-    setDataLimitePagamento('');
-    setClienteSelecionado(null); // Resetando o cliente selecionado
-    carregarProdutos();
-  } catch (error) {
-    console.error('Erro ao finalizar venda:', error);
-    toast.error('Erro ao finalizar venda');
-  }
-};
+      if (carrinho.length === 0) {
+        toast.error('Adicione produtos ao carrinho');
+        return;
+      }
+
+      if (!funcionarioSelecionado) {
+        toast.error('Selecione um funcionário');
+        return;
+      }
+
+      const dataAtual = addHours(new Date(), -3); // Ajusta para horário de Brasília
+      const venda = {
+        items: carrinho,
+        total: totalComDesconto,
+        forma_pagamento: formaPagamento,
+        desconto_dinheiro: descontoDinheiro ? parseFloat(descontoDinheiro) : 0,
+        desconto_porcentagem: descontoPorcentagem ? parseFloat(descontoPorcentagem) : 0,
+        data: formatarDataISO(dataAtual), // Use o formato ISO
+        finalizada: true,
+        user_id: user.id,
+        funcionario_id: funcionarioSelecionado,
+        cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
+        data_limite_pagamento: formaPagamento === 'aprazo' ? formatarDataISO(addHours(new Date(dataLimitePagamento), -3)) : null, // Formato ISO
+        divida_ativa: formaPagamento === 'aprazo',
+      };
+
+      const { error: vendaError } = await supabase.from('vendas').insert([venda]);
+      if (vendaError) throw vendaError;
+
+      for (const item of carrinho) {
+        if (!item.produto.avulso) {
+          const { data: produtoAtualizado, error: produtoError } = await supabase
+            .from('produtos')
+            .select('estoque')
+            .eq('id', item.produto.id)
+            .single();
+
+          if (produtoError) throw produtoError;
+
+          const novoEstoque = produtoAtualizado.estoque - item.quantidade;
+
+          const { error: updateError } = await supabase
+            .from('produtos')
+            .update({ estoque: novoEstoque })
+            .eq('id', item.produto.id);
+
+          if (updateError) throw updateError;
+        }
+      }
+
+      toast.success('Venda finalizada com sucesso!');
+      setCarrinho([]);
+      setDescontoPorcentagem('');
+      setDescontoDinheiro('');
+      setFormaPagamento('dinheiro');
+ setFuncionarioSelecionado('');
+      setValorRecebido(null);
+      setDataLimitePagamento('');
+      setClienteSelecionado(null);
+      carregarProdutos();
+    } catch (error) {
+      console.error('Erro ao finalizar venda:', error);
+      toast.error('Erro ao finalizar venda');
+    }
+  };
 
   if (loading) {
     return (
@@ -227,8 +227,7 @@ const venda = {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="card p-4">
         <div className="space-y-4 mb-4">
-          <div className="card 
-          p-4 border-2 border-indigo-100">
+          <div className="card p-4 border-2 border-indigo-100">
             <h3 className="font-medium text-gray-900 mb-3">Produto Avulso</h3>
             <div className="space-y-3">
               <input
@@ -274,7 +273,7 @@ const venda = {
                     descricao: '',
                     codigo: '',
                     estoque: 0,
-                    avulso: true // Identifica o produto como avulso
+                    avulso: true
                   };
                   adicionarAoCarrinho(produtoAvulso, novoProduto.quantidade);
                   setNovoProduto({ nome: '', preco: null, quantidade: 1 });
@@ -343,7 +342,7 @@ const venda = {
                 </div>
                 <button
                   onClick={() => removerDoCarrinho(item.produto.id)}
-                  className="p-1.5 text-red-600 hover:bg-red -50 rounded-lg transition-colors"
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 size={20} />
                 </button>
